@@ -1,6 +1,8 @@
+import os
+
 import pandas as pd
 
-def get_one_pledges_points(df, pledge, point_column_name="PointChange", pledge_column_name="Pledge"):
+def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_column_name="Pledge"):
     """
     Calculates the total number of points for a specific pledge by summing the PointChange
 
@@ -48,7 +50,7 @@ def get_point_totals(df, pledge_column_name="Pledge"):
     pledges = get_pledge_names(df, pledge_column_name)
     totals = []
     for pledge in pledges:
-        totals.append(get_one_pledges_points(df, pledge))
+        totals.append(get_one_pledge_points(df, pledge))
     del df
     return [pledges, totals]
 
@@ -78,11 +80,14 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
 
 def create_csv(filename):
     """
-    Creates a CSV file with predefined columns if the file does not already exist.
+    This .
 
     :param filename: The name/path of the file to create.
     :type filename: str
     """
+    if os.path.exists(filename):
+        raise FileExistsError("The file {} already exists.".format(filename))
+        return False
     columns = ["Time", "PointChange", "Pledge", "Brother", "Comment"]
     df = pd.DataFrame(columns=columns)
     df.to_csv(filename, index=False)
@@ -97,5 +102,7 @@ def read_csv(filename):
     :return: A pandas DataFrame containing the data from the CSV file.
     :type: pandas.DataFrame
     """
+    if not os.path.exists(filename):
+        raise FileNotFoundError("The file {} doesn't exist.".format(filename))
     df = pd.read_csv(filename)
     return df
