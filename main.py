@@ -15,8 +15,9 @@ from dotenv import load_dotenv
 from pandas import DataFrame
 import aiohttp  # Add this import at the top with other imports
 
-from PledgePoints.pledges import create_csv, read_csv, append_row_to_df
+from PledgePoints.csvutils import create_csv, read_csv, append_row_to_df
 
+# Warner: This unitl on_ready was ai generated because I couldn't be bothered
 # Initialize SSL context for secure connections
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
@@ -51,26 +52,8 @@ async def on_ready():
     except Exception as e:
         print(f'Error synchronizing slash commands: {str(e)}')
 
-@bot.tree.command(name="ping", description="Check if the bot is responsive and get its latency")
-async def ping(interaction: discord.Interaction):
-    # Calculate uptime
-    uptime = datetime.now(pytz.UTC) - bot.start_time
-    hours = uptime.total_seconds() // 3600
-    minutes = (uptime.total_seconds() % 3600) // 60
-    seconds = uptime.total_seconds() % 60
-    
-    # Get bot latency
-    latency = round(bot.latency * 1000)  # Convert to milliseconds
-    
-    # Create embed for better presentation
-    embed = discord.Embed(
-        title="🏓 Pong!",
-        color=discord.Color.green()
-    )
-    embed.add_field(name="Latency", value=f"{latency}ms", inline=True)
-    embed.add_field(name="Uptime", value=f"{int(hours)}h {int(minutes)}m {int(seconds)}s", inline=True)
-    
-    await interaction.response.send_message(embed=embed)
+
+
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -109,6 +92,32 @@ async def main():
     finally:
         if not bot.is_closed():
             await bot.close()
+
+
+@bot.tree.command(name="ping", description="Check if the bot is responsive and get its latency")
+async def ping(interaction: discord.Interaction):
+    # Calculate uptime
+    uptime = datetime.now(pytz.UTC) - bot.start_time
+    hours = uptime.total_seconds() // 3600
+    minutes = (uptime.total_seconds() % 3600) // 60
+    seconds = uptime.total_seconds() % 60
+
+    # Get bot latency
+    latency = round(bot.latency * 1000)  # Convert to milliseconds
+
+    # Create embed for better presentation
+    embed = discord.Embed(
+        title="🏓 Pong!",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Latency", value=f"{latency}ms", inline=True)
+    embed.add_field(name="Uptime", value=f"{int(hours)}h {int(minutes)}m {int(seconds)}s", inline=True)
+
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="Change_Pledge_Points")
+async def change_pledge_points(interaction, pointchange, pledge, comment):
+    21
 
 if __name__ == "__main__":
     asyncio.run(main())

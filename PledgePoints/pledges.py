@@ -1,6 +1,4 @@
-import os
-
-import pandas as pd
+from PledgePoints.csvutils import append_row_to_df, get_current_time
 
 
 def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_column_name="Pledge"):
@@ -33,11 +31,12 @@ def get_pledge_names(df, pledge_column_name="Pledge"):
     :type df: pandas.DataFrame
     :param pledge_column_name: The name of the column containing the pledge names
     :type pledge_column_name: str
-    :return: A list of the pledge names without duplicates in no particular order
+    :return: A list of the pledge names without duplicates in alphabetical order.
     :rtype: list
     """
     pledges = df[pledge_column_name].to_list()
     pledges = list(set(pledges))
+    pledges = sorted(pledges)
     return pledges
 
 
@@ -69,7 +68,7 @@ def get_point_totals(df, pledge_column_name="Pledge"):
 
 
 def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name="PointChange", time_column_name="Time",
-                      brother_column_name="Brother", comment_column_name="Comment"):
+                      brother_column_name="Brother", comment_column_name="Comment", approved_column_name="Approved"):
     """
     Author: Warner
     Filters and reorganizes a DataFrame to provide the point history of a specific pledge. The function
@@ -88,68 +87,11 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
     df = df.loc[df[pledge_column_name] == pledge]
     df = df.sort_values(by=time_column_name)
     df = df.reset_index(drop=True)
-    df = df[[time_column_name, point_column_name, pledge_column_name, brother_column_name, comment_column_name]]
+    df = df[[time_column_name, point_column_name, pledge_column_name, brother_column_name, comment_column_name, approved_column_name]]
     return df
 
 
-def create_csv(filename, columns=("Time", "PointChange", "Pledge", "Brother", "Comment")):
-    """
-    Author: Warner
-    This will create a csv file with the specified columns.
-
-    :param columns: a list of strings containing the column names
-    :type columns: list
-    :param filename: The name/path of the file to create.
-    :type filename: str
-    :return: Boolean indicating if the file was successfully created.
-    :rtype: bool
-    """
-    if os.path.exists(filename):
-        raise FileExistsError("The file {} already exists.".format(filename))
-    df = pd.DataFrame(columns=columns)
-    df.to_csv(filename, index=False)
-    return True
-
-
-def read_csv(filename):
-    """
-    Author: Warner
-    Reads a CSV file and returns a pandas DataFrame.
-    :param filename: The name of the file to read.
-    :type filename: str
-    :return: A pandas DataFrame containing the data from the CSV file.
-    :type: pandas.DataFrame
-    """
-    if not os.path.exists(filename):
-        raise FileNotFoundError("The file {} doesn't exist.".format(filename))
-    df = pd.read_csv(filename)
-    return df
-
-
-def append_row_to_df(df, new_row):
-    """
-    Author: Warner
-    Appends a new row to the given DataFrame. new_row should be a list of values that make up the vow, and should have
-    the same number of columns as the dataframe.
-    :param df: the pandas Dataframe that will be appended.
-    :type df: pandas.DataFrame
-    :param new_row: a list of values that make up the new row.
-    :type new_row: list
-    :return: A pandas DataFrame containing the new row appended.
-    :rtype: pandas.DataFrame
-    """
-    # Warner: According to a stake overflow post I read turning a dataframe into a list of rows, appending that list
-    # and then making a new dataframe is the most efficient way to append a row to a dataframe.
-
-    # This creates a list of lists.  Each list in the list contains the values of the row
-    rows = df.values.tolist()
-    headers = df.columns.tolist()
-    if len(new_row) != len(headers):
-        raise Exception("The new row must have the same number of columns as the headers.")
-    rows.append(new_row)
-    return pd.DataFrame(rows, columns=headers)
-
-def change_pledge_points(df, pledge, brother, time, comment, points):
+def change_pledge_points(df, pledge, brother, comment, points):
     """
     Modify the points associated with a pledge by appending a new row containing
     the relevant details to the provided DataFrame. This function records the
@@ -173,6 +115,7 @@ def change_pledge_points(df, pledge, brother, time, comment, points):
     :type points: int
     :return: A boolean value indicating whether the operation was successful.
     """
-    new_row = [time, points, pledge, brother, comment]
+    new_row = [get_current_time(), points, pledge, brother, comment, False]
     append_row_to_df(df, new_row)
     return True
+
