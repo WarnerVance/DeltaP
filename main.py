@@ -13,11 +13,14 @@ from discord import app_commands  # Discord slash commands
 from discord.ext import commands, tasks  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
 from pandas import DataFrame
+import aiohttp  # Add this import at the top with other imports
 
-from PledgePoints.pledges import create_csv, read_csv
+from PledgePoints.pledges import create_csv, read_csv, append_row_to_df
 
 # Initialize SSL context for secure connections
-ssl_context = ssl.create_default_context(cafile=certifi.where())
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
 
 # Set up Discord bot with required permissions
 intents = discord.Intents.default()
@@ -25,10 +28,59 @@ intents.message_content = True  # Enable message content intent
 bot = commands.Bot(command_prefix='!', intents=intents)
 bot.start_time = None
 
+# Create aiohttp session with SSL context
+async def get_session():
+    return aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_context))
 
-load_dotenv()  # Load environment variables from .env file
-TOKEN = os.getenv('DISCORD_TOKEN') # Sets the discord api key to a value from .env file
-master_point_csv_name = os.getenv('CSV_NAME') # Does the same with the name of the master point csv
+bot.http._HTTPClient__session = None
+bot.http.get_session = get_session
+
+@bot.event
+async def on_ready():
+    print(f'Bot is ready! Logged in as {bot.user.name} (ID: {bot.user.id})')
+    print('------')
+    
+    if bot.start_time is None:  # Only set on first connection
+        bot.start_time = datetime.now(pytz.UTC)
+        print(f'Start time set to: {bot.start_time}')
+
+    try:
+        # Synchronize slash commands with Discord's API
+        synced = await bot.tree.sync()
+        print(f'Synced {len(synced)} command(s)')
+    except Exception as e:
+        print(f'Error synchronizing slash commands: {str(e)}')
+
+@bot.tree.command(name="ping", description="Check if the bot is responsive and get its latency")
+async def ping(interaction: discord.Interaction):
+    # Calculate uptime
+    uptime = datetime.now(pytz.UTC) - bot.start_time
+    hours = uptime.total_seconds() // 3600
+    minutes = (uptime.total_seconds() % 3600) // 60
+    seconds = uptime.total_seconds() % 60
+    
+    # Get bot latency
+    latency = round(bot.latency * 1000)  # Convert to milliseconds
+    
+    # Create embed for better presentation
+    embed = discord.Embed(
+        title="🏓 Pong!",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Latency", value=f"{latency}ms", inline=True)
+    embed.add_field(name="Uptime", value=f"{int(hours)}h {int(minutes)}m {int(seconds)}s", inline=True)
+    
+    await interaction.response.send_message(embed=embed)
+
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
+if not TOKEN:
+    raise ValueError("DISCORD_TOKEN not found in .env file")
+
+master_point_csv_name = os.getenv('CSV_NAME')
+if not master_point_csv_name:
+    raise ValueError("CSV_NAME not found in .env file")
+
 
 # Initialize required CSV files if they don't exist
 try:
@@ -43,33 +95,20 @@ except Exception as e:
     print(f"Error creating CSV files: {str(e)}")
     del e
 
-
-
-
-async def on_ready():
-    if bot.start_time is None:  # Only set on first connection
-        bot.start_time = datetime.now(pytz.UTC)
-
-    try:
-        # Synchronize slash commands with Discord's API
-        synced = await bot.tree.sync()
-    except Exception as e:
-        print(f"Error synchronizing slash commands: {str(e)}")
-
-
-
 async def main():
+    print('Starting bot...')
     try:
         # First set up the bot
         await bot.login(TOKEN)
+        print('Successfully logged in')
         # Then connect and start processing events
         await bot.connect()
+        print('Successfully connected to Discord')
     except Exception as e:
-        print(f"Error during startup: {str(e)}")
+        print(f'Error during startup: {str(e)}')
     finally:
         if not bot.is_closed():
             await bot.close()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
