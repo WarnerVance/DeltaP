@@ -24,6 +24,15 @@ def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_co
 
 
 def get_pledge_names(df, pledge_column_name="Pledge"):
+    """
+
+    :param df: The pandas DataFrame containing the data.
+    :type df: pandas.DataFrame
+    :param pledge_column_name: The name of the column containing the pledge names
+    :type pledge_column_name: str
+    :return: A list of the pledge names without duplicates in no particular order
+    :rtype: list
+    """
     pledges = df[pledge_column_name].to_list()
     pledges = list(set(pledges))
     return pledges
@@ -78,17 +87,20 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
     return df
 
 
-def create_csv(filename):
+def create_csv(filename, columns = ["Time", "PointChange", "Pledge", "Brother", "Comment"]):
     """
-    This .
+    This will create a csv file with the specified columns.
 
+    :param columns: a list of strings containing the column names
+    :type columns: list
     :param filename: The name/path of the file to create.
     :type filename: str
+    :return: Boolean indicating if the file was successfully created.
+    :rtype: bool
     """
     if os.path.exists(filename):
         raise FileExistsError("The file {} already exists.".format(filename))
         return False
-    columns = ["Time", "PointChange", "Pledge", "Brother", "Comment"]
     df = pd.DataFrame(columns=columns)
     df.to_csv(filename, index=False)
     return True
