@@ -148,3 +148,31 @@ def append_row_to_df(df, new_row):
         raise Exception("The new row must have the same number of columns as the headers.")
     rows.append(new_row)
     return pd.DataFrame(rows, columns=headers)
+
+def change_pledge_points(df, pledge, brother, time, comment, points):
+    """
+    Modify the points associated with a pledge by appending a new row containing
+    the relevant details to the provided DataFrame. This function records the
+    update by adding information such as the timestamp, points value, pledge name,
+    responsible brother, and a related comment.
+
+    :param df: The DataFrame to which the new row will be appended. This should
+        contain previous pledge point records.
+    :type df: pandas.DataFrame
+    :param pledge: The name or identifier of the pledge whose points are being
+        adjusted.
+    :type pledge: str
+    :param brother: The name or identifier of the brother responsible for
+        the points adjustment.
+    :type brother: str
+    :param time: The timestamp indicating when the points change is made.
+    :type time: float
+    :param comment: A brief description or context for the points adjustment.
+    :type comment: str
+    :param points: The numerical value of points to be added or deducted.
+    :type points: int
+    :return: A boolean value indicating whether the operation was successful.
+    """
+    new_row = [time, points, pledge, brother, comment]
+    append_row_to_df(df, new_row)
+    return True
