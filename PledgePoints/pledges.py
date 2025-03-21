@@ -118,3 +118,19 @@ def read_csv(filename):
         raise FileNotFoundError("The file {} doesn't exist.".format(filename))
     df = pd.read_csv(filename)
     return df
+
+
+def append_row_to_df(df, new_row):
+    """
+    Appends a new row to the given DataFrame. new_row should be a list of values
+    :param df:
+    :param new_row:
+    :return:
+    """
+    rows = df.values.tolist()
+    headers = df.columns.tolist()
+    if len(new_row) != len(headers):
+        raise Exception("The new row must have the same number of columns as the headers.")
+        return False
+    rows.append(new_row)
+    return pd.DataFrame(rows, columns=headers)
