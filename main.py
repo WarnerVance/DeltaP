@@ -2,18 +2,18 @@
 import asyncio  # Asynchronous I/O support
 import os  # File and path operations
 import ssl  # Secure connection support
-from datetime import datetime, time as datetime_time  # Date and time handling
+import time
+from datetime import datetime  # Date and time handling
 
 import certifi  # SSL certificate handling
 import discord  # Discord API wrapper
-import pandas as pd
-import psutil  # System information
 import pytz  # Timezone support
 from discord import app_commands  # Discord slash commands
 from discord.ext import commands, tasks  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
-from pandas import DataFrame
 
+import PledgePoints.pledges
+import role.role_checking
 from PledgePoints.pledges import create_csv, read_csv
 
 # Initialize SSL context for secure connections
@@ -23,7 +23,6 @@ ssl_context = ssl.create_default_context(cafile=certifi.where())
 intents = discord.Intents.default()
 intents.message_content = True  # Enable message content intent
 bot = commands.Bot(command_prefix='!', intents=intents)
-bot.start_time = None
 
 
 load_dotenv()  # Load environment variables from .env file
@@ -31,6 +30,7 @@ TOKEN = os.getenv('DISCORD_TOKEN') # Sets the discord api key to a value from .e
 master_point_csv_name = os.getenv('CSV_NAME') # Does the same with the name of the master point csv
 
 # Initialize required CSV files if they don't exist
+
 try:
     if not os.path.exists(master_point_csv_name):
         # Warner: The Default values for columns in the create_csv function are fine here.
@@ -42,7 +42,6 @@ try:
 except Exception as e:
     print(f"Error creating CSV files: {str(e)}")
     del e
-
 
 
 
