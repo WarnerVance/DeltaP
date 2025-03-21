@@ -1,10 +1,7 @@
 # Imports
 import asyncio  # Asynchronous I/O support
-import functools  # Function and decorator tools
 import os  # File and path operations
-import platform  # System information
 import ssl  # Secure connection support
-import time
 from datetime import datetime, time as datetime_time  # Date and time handling
 
 import certifi  # SSL certificate handling
