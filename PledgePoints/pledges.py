@@ -2,8 +2,10 @@ import os
 
 import pandas as pd
 
+
 def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_column_name="Pledge"):
     """
+    Author: Warner
     Calculates the total number of points for a specific pledge by summing the PointChange
 
     :param pledge_column_name: The name of the column containing the pledge names
@@ -25,7 +27,8 @@ def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_co
 
 def get_pledge_names(df, pledge_column_name="Pledge"):
     """
-
+    Author: Warner
+    Returns a list of the unique pledge names from the Dataframe
     :param df: The pandas DataFrame containing the data.
     :type df: pandas.DataFrame
     :param pledge_column_name: The name of the column containing the pledge names
@@ -40,6 +43,7 @@ def get_pledge_names(df, pledge_column_name="Pledge"):
 
 def get_point_totals(df, pledge_column_name="Pledge"):
     """
+    Author: Warner
     Calculates cumulative point totals for unique pledges in the DataFrame.
 
     The function extracts all unique pledges from a given column of the
@@ -65,8 +69,9 @@ def get_point_totals(df, pledge_column_name="Pledge"):
 
 
 def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name="PointChange", time_column_name="Time",
-                  brother_column_name="Brother", comment_column_name="Comment"):
+                      brother_column_name="Brother", comment_column_name="Comment"):
     """
+    Author: Warner
     Filters and reorganizes a DataFrame to provide the point history of a specific pledge. The function
     filters rows based on the specified pledge, sorts them by time, and selects key columns to return
     a structured history of point changes.
@@ -87,8 +92,9 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
     return df
 
 
-def create_csv(filename, columns = ["Time", "PointChange", "Pledge", "Brother", "Comment"]):
+def create_csv(filename, columns=("Time", "PointChange", "Pledge", "Brother", "Comment")):
     """
+    Author: Warner
     This will create a csv file with the specified columns.
 
     :param columns: a list of strings containing the column names
@@ -100,7 +106,6 @@ def create_csv(filename, columns = ["Time", "PointChange", "Pledge", "Brother", 
     """
     if os.path.exists(filename):
         raise FileExistsError("The file {} already exists.".format(filename))
-        return False
     df = pd.DataFrame(columns=columns)
     df.to_csv(filename, index=False)
     return True
@@ -108,6 +113,7 @@ def create_csv(filename, columns = ["Time", "PointChange", "Pledge", "Brother", 
 
 def read_csv(filename):
     """
+    Author: Warner
     Reads a CSV file and returns a pandas DataFrame.
     :param filename: The name of the file to read.
     :type filename: str
@@ -122,15 +128,23 @@ def read_csv(filename):
 
 def append_row_to_df(df, new_row):
     """
-    Appends a new row to the given DataFrame. new_row should be a list of values
-    :param df:
-    :param new_row:
-    :return:
+    Author: Warner
+    Appends a new row to the given DataFrame. new_row should be a list of values that make up the vow, and should have
+    the same number of columns as the dataframe.
+    :param df: the pandas Dataframe that will be appended.
+    :type df: pandas.DataFrame
+    :param new_row: a list of values that make up the new row.
+    :type new_row: list
+    :return: A pandas DataFrame containing the new row appended.
+    :rtype: pandas.DataFrame
     """
+    # Warner: According to a stake overflow post I read turning a dataframe into a list of rows, appending that list
+    # and then making a new dataframe is the most efficient way to append a row to a dataframe.
+
+    # This creates a list of lists.  Each list in the list contains the values of the row
     rows = df.values.tolist()
     headers = df.columns.tolist()
     if len(new_row) != len(headers):
         raise Exception("The new row must have the same number of columns as the headers.")
-        return False
     rows.append(new_row)
     return pd.DataFrame(rows, columns=headers)
