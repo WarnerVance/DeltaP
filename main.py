@@ -12,8 +12,9 @@ import pytz  # Timezone support
 from discord import app_commands  # Discord slash commands
 from discord.ext import commands, tasks  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
+from pandas import DataFrame
 
-from PledgePoints.pledges import create_csv
+from PledgePoints.pledges import create_csv, read_csv
 
 # Initialize SSL context for secure connections
 ssl_context = ssl.create_default_context(cafile=certifi.where())
@@ -24,8 +25,24 @@ intents.message_content = True  # Enable message content intent
 bot = commands.Bot(command_prefix='!', intents=intents)
 bot.start_time = None
 
+
 load_dotenv()  # Load environment variables from .env file
-TOKEN = os.getenv('DISCORD_TOKEN')
+TOKEN = os.getenv('DISCORD_TOKEN') # Sets the discord api key to a value from .env file
+master_point_csv_name = os.getenv('CSV_NAME') # Does the same with the name of the master point csv
+
+# Initialize required CSV files if they don't exist
+try:
+    if not os.path.exists(master_point_csv_name):
+        # Warner: The Default values for columns in the create_csv function are fine here.
+        if create_csv(master_point_csv_name):
+            master_df = read_csv(master_point_csv_name)
+        else:
+            raise UserWarning("csv file doesn't exist and cannot be created.")
+
+except Exception as e:
+    print(f"Error creating CSV files: {str(e)}")
+    del e
+
 
 
 
@@ -33,16 +50,6 @@ async def on_ready():
     if bot.start_time is None:  # Only set on first connection
         bot.start_time = datetime.now(pytz.UTC)
 
-    # Initialize required CSV files if they don't exist
-    try:
-        # Create pledges.csv if it doesn't exist
-        if not os.path.exists('MasterPoints.csv'):
-            create_csv('MasterPoints.csv')
-            print(
-                "Created pledges.csv, MasterPoints.csv, PendingPoints.csv, and Points.csv files if they didn't exist."
-            )
-    except Exception as e:
-        print(f"Error creating CSV files: {str(e)}")
     try:
         # Synchronize slash commands with Discord's API
         synced = await bot.tree.sync()
@@ -51,13 +58,10 @@ async def on_ready():
 
 
 
-
 async def main():
     try:
         # First set up the bot
         await bot.login(TOKEN)
-
-        # Start the midnight update task
         # Then connect and start processing events
         await bot.connect()
     except Exception as e:
