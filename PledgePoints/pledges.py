@@ -120,24 +120,24 @@ def change_pledge_points(df, pledge, brother, comment, points):
     :return: A new dataframe with the updated row appended.
     """
 
-    if df.empty:
-        # If there is no data in the dataframe, we default to a previous index of -1 so that our first id will be 0
-        previous_id = -1
-    else:
+    if not df.empty:
         # This finds the highest value for ID in the given dataframe
         previous_id = int(df["ID"].sort_values(ascending=False).reset_index(drop=True)[0])
+    else:
+        # If there is no data in the dataframe, we default to a previous index of -1 so that our first id will be 0
+        previous_id = -1
+
     new_id = previous_id + 1
 
     # This is a bit of failsafe code that should never run if the above if statement works correctly.
-    # It checks if our new_id has previously appeared in the ID column
+    # It checks if our new_id has previously appeared in the ID column which should never happen
     if new_id in df["ID"].values:
-        return False
+        raise ValueError("The new ID has already appeared in the ID column.")
 
     if type(points) != int:
         points = int(points)
 
     new_row = [new_id,get_current_time(), points, pledge, brother, comment, False]
     new_df = append_row_to_df(df, new_row)
-    del previous_id, new_id, new_row, df, points, pledge, brother, comment
     return new_df
 
