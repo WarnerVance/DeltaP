@@ -1,8 +1,9 @@
 import os
-
-import pandas as pd
-import numpy as np
 import time
+
+import numpy as np
+import pandas as pd
+
 
 def create_csv(filename, columns = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")):
     """
@@ -38,7 +39,7 @@ def read_csv(filename):
         df = pd.read_csv(filename)
         columns = df.columns.tolist()
         del df
-    dtypes = {columns[0]: "int16",
+    dtypes = {columns[0]: "int32",
               columns[2]: "int16",
               columns[3]: "string",
               columns[4]: "string",
