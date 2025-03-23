@@ -93,10 +93,16 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
 
 def change_pledge_points(df, pledge, brother, comment, points):
     """
+
+    Author: Warner
+
     Modify the points associated with a pledge by appending a new row containing
     the relevant details to the provided DataFrame. This function records the
     update by adding information such as the timestamp, points value, pledge name,
     responsible brother, and a related comment.
+
+    It also adds a unique ID integer to the row along with a boolean indicating whether the
+    point change has been approved or not.
 
     :param df: The DataFrame to which the new row will be appended. This should
         contain previous pledge point records.
@@ -107,15 +113,31 @@ def change_pledge_points(df, pledge, brother, comment, points):
     :param brother: The name or identifier of the brother responsible for
         the points adjustment.
     :type brother: str
-    :param time: The timestamp indicating when the points change is made.
-    :type time: float
     :param comment: A brief description or context for the points adjustment.
     :type comment: str
     :param points: The numerical value of points to be added or deducted.
     :type points: int
-    :return: A boolean value indicating whether the operation was successful.
+    :return: A new dataframe with the updated row appended.
     """
-    new_row = [get_current_time(), points, pledge, brother, comment, False]
-    append_row_to_df(df, new_row)
-    return True
+
+    if df.empty:
+        # If there is no data in the dataframe, we default to a previous index of -1 so that our first id will be 0
+        previous_id = -1
+    else:
+        # This finds the highest value for ID in the given dataframe
+        previous_id = int(df["ID"].sort_values(ascending=False).reset_index(drop=True)[0])
+    new_id = previous_id + 1
+
+    # This is a bit of failsafe code that should never run if the above if statement works correctly.
+    # It checks if our new_id has previously appeared in the ID column
+    if new_id in df["ID"].values:
+        return False
+
+    if type(points) != int:
+        points = int(points)
+
+    new_row = [new_id,get_current_time(), points, pledge, brother, comment, False]
+    new_df = append_row_to_df(df, new_row)
+    del previous_id, new_id, new_row, df, points, pledge, brother, comment
+    return new_df
 

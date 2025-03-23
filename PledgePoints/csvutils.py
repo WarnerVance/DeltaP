@@ -4,13 +4,12 @@ import pandas as pd
 import numpy as np
 import time
 
-def create_csv(filename, columns=("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")):
+def create_csv(filename, columns = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")):
     """
     Author: Warner
     This will create a csv file with the specified columns.
-
-    :param columns: a list of strings containing the column names
-    :type columns: list
+    :param columns: The columns to include in the csv file.
+    :type columns: tuple or list
     :param filename: The name/path of the file to create.
     :type filename: str
     :return: Boolean indicating if the file was successfully created.
@@ -18,7 +17,6 @@ def create_csv(filename, columns=("ID", "Time", "PointChange", "Pledge", "Brothe
     """
     if os.path.exists(filename):
         raise FileExistsError("The file {} already exists.".format(filename))
-
     df = pd.DataFrame(columns=columns)
     df.to_csv(filename, index=False)
     return filename

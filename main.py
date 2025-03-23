@@ -115,9 +115,6 @@ async def ping(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="Change_Pledge_Points")
-async def change_pledge_points(interaction, pointchange, pledge, comment):
-    21
 
 if __name__ == "__main__":
     asyncio.run(main())
