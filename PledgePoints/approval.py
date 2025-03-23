@@ -30,17 +30,34 @@ def change_point_approval(df, point_id, new_approval, id_column_name="ID", appro
     of the DataFrame.
     """
 
-    # Belive it or not but this is much faster than any pandas vectorized thing I've tried so fare
+    # Believe it or not but this is much faster than any pandas vectorized thing I've tried so far
+    # Input validation
     if type(new_approval) != bool:
         raise TypeError("new_approval must be a boolean")
     if point_id not in df[id_column_name].values:
         raise ValueError("Point ID not found in dataframe")
+
+    # This finds the index values for the approval and ID columns from the given dataframe.
+    columns = df.columns.tolist()
+    approval_idx, id_idx = None, None
+    for idx in range(len(columns)):
+        if (approval_idx is not None) and (id_idx is not None):
+            break  # This ends the loop if we've found both of our column indices
+        if columns[idx] == approved_column_name:  # This finds the index of the approval column
+            approval_idx = idx
+            continue
+        if columns[idx] == id_column_name:  # This finds the index of the id column
+            id_idx = idx
+            continue
+
     rows = df.values.tolist()
+    # I know it's crazy but this is actually really fast. Maybe some pandas genius can come up with a better way, but
+    # the benchmarking I've done makes it seem that this is the best way -Warner
     for row in rows:
-        if row[0] == point_id:
-            row[6] = new_approval
+        if row[id_idx] == point_id:
+            row[approval_idx] = new_approval
             break
-    new_df = pd.DataFrame(rows, columns=df.columns)
+    new_df = pd.DataFrame(rows, columns=columns)
     return new_df
 
 
