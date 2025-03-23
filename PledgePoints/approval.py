@@ -61,49 +61,60 @@ def change_point_approval(df, point_id, new_approval, id_column_name="ID", appro
     return new_df
 
 
-def get_approved_points(df, approval_row="Approved"):
+def get_approved_points(df, approval_column_name="Approved", id_column_name="ID"):
     """
+    Author: Warner
+
     Extract rows with approved points from a DataFrame based on a specified column indicating approval status.
 
     This function filters the input DataFrame to return only rows where the specified
     approval column contains a value of True. The column used for the approval check
-    is specified by the `approval_row` parameter, which defaults to "Approved".
+    is specified by the `approval_column_name` parameter, which defaults to "Approved". The resulting dataframe is
+    sorted by the `id_column_name` column.
 
+    :param id_column_name: The name of the column in the DataFrame that stores the ID column name
+    :type id_column_name: str
     :param df: A pandas DataFrame containing the data to be filtered.
     :type df: pandas.DataFrame
-    :param approval_row: The name of the column that indicates approval status.
+    :param approval_column_name: The name of the column that indicates approval status.
         Defaults to "Approved".
-    :type approval_row: str
+    :type approval_column_name: str
     :return: A filtered DataFrame containing only rows where the value in the specified
         approval column is True.
     :rtype: pandas.DataFrame
     """
-    return df.loc[df[approval_row] is True].sort_values(by="ID")
+    return df.loc[df[approval_column_name] is True].sort_values(by=id_column_name)
 
 
-def get_unapproved_points(df, approval_row="Approved"):
+def get_unapproved_points(df, approval_column_name="Approved", id_column_name="ID"):
     """
+    Author: Warner
+
     Extract rows from the DataFrame that have not been approved.
 
     This function identifies and returns DataFrame rows where the specified
     approval column has a value of `False`. The resulting rows are sorted
-    based on the "ID" column.
+    based on the `id_column_name` column.
 
+    :param id_column_name: The name of the column in the DataFrame that stores the point ID.
+    :type id_column_name: str
     :param df: The input DataFrame containing rows and an approval column.
     :type df: pandas.DataFrame
-    :param approval_row: The column name to check for approval status.
+    :param approval_column_name: The column name to check for approval status.
         Defaults to "Approved".
-    :type approval_row: str
+    :type approval_column_name: str
     :return: A filtered DataFrame containing only unapproved rows, sorted
         by the "ID" column.
     :rtype: pandas.DataFrame
     """
-    return df.loc[df[approval_row] is False].sort_values(by="ID")
+    return df.loc[df[approval_column_name] is False].sort_values(by=id_column_name)
 
 
 def change_approval_with_range(df, start_id, end_id, new_approval, id_column_name="ID",
                                approved_column_name="Approved"):
     """
+    Author: Warner
+
     Updates the approval status of entries in a DataFrame for a range of IDs. This
     function is intended to assist in bulk approval or disapproval of records by
     iterating through a given range of IDs and updating their status.
@@ -142,6 +153,8 @@ k
 
 def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="ID", approved_column_name="Approved"):
     """
+    Author: Warner
+
     Modifies the approval status in a DataFrame for specific rows identified by their unique IDs.
     This function updates the `Approved` column for rows matching the IDs in the provided list or
     tuple, changing their values to the specified boolean (`True` or `False`) for approval. The operation
