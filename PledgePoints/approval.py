@@ -145,7 +145,7 @@ k
     if start_id > end_id:
         start_id, end_id = end_id, start_id
 
-    # This iterates through
+    # This iterates through the ids and makes the approval change for each one
     for i in range(start_id, end_id + 1):
         df = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
     return df
@@ -189,6 +189,7 @@ def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="
         - If `ids` is empty.
         - If the length of `ids` exceeds the number of rows in the DataFrame.
     """
+    # Input validation
     if type(ids) != list or tuple:
         raise TypeError("ids must be a list or tuple")
     if type(new_approval) != bool:
@@ -200,7 +201,7 @@ def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="
     if type(ids[0]) != int:
         raise TypeError("ids must contain only integers")
 
-    # This iterates through
+    # This iterates through the ids and makes the approval change for each one
     for i in ids:
         df = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
     return df
