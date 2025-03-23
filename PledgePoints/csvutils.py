@@ -26,12 +26,15 @@ def create_csv(filename, columns = ("ID", "Time", "PointChange", "Pledge", "Brot
 def read_csv(filename):
     """
     Author: Warner
+
     Reads a CSV file and returns a pandas DataFrame.
     :param filename: The name of the file to read.
     :type filename: str
     :return: A pandas DataFrame containing the data from the CSV file.
     :type: pandas.DataFrame
     """
+    # Values in here are hardcoded. This is usually not good practice, but to change the columns for everything else
+    # you can just change the values here. - Warner
     columns = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")
     if not os.path.exists(filename):
         raise FileNotFoundError("The file {} doesn't exist.".format(filename))
@@ -39,12 +42,17 @@ def read_csv(filename):
         df = pd.read_csv(filename)
         columns = df.columns.tolist()
         del df
-    dtypes = {columns[0]: "int32",
-              columns[2]: "int16",
+    dtypes = {columns[0]: "uint32",  # ID should never be negative. The only reason its 32 bits is because I test with a
+              # dataset that is 100,000 rows long and would run into overflow problems otherwise.
+              # to optimize an uint16 would be just fine.
+              columns[2]: "int8",  # This limits point change values to -128 to 127. That shouldn't be an issue, but if
+              # you run into overflow problems you can change to int16 or in32.
               columns[3]: "string",
               columns[4]: "string",
               columns[5]: "string",
               columns[6]: "bool"}
+    # Another option to optimize these dtypes for lower ram usage would be to store Pledge and Brother as int ids and
+    # be able to map ids to names using a dict if needed.
     df = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
     return df
 
