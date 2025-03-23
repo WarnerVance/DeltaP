@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+
 from PledgePoints.pledges import *
 
 
@@ -133,7 +134,6 @@ class TestGetPointTotals:
 
 
 
-
 class TestGetPointHistory:
     def test_get_point_history_for_valid_pledge(self):
         """Test filtering and organizing data for a specific pledge."""
@@ -223,4 +223,81 @@ class TestGetPointHistory:
         )
 
 
+class TestChangePledgePoints:
+    def test_append_new_row(self):
+        """Test appending a new row for a valid pledge."""
+        data = {
+            "ID": [0, 1],
+            "Time": ["2023-10-01", "2023-10-02"],
+            "PointChange": [10, -5],
+            "Pledge": ["Pledge1", "Pledge1"],
+            "Brother": ["John", "Jane"],
+            "Comment": ["First update", "Correction"],
+            "Approved": [True, False],
+        }
+        df = pd.DataFrame(data)
+        updated_df = change_pledge_points(df, "Pledge1", "Smith", "Added points", 15)
+        assert len(updated_df) == 3
+        assert updated_df.iloc[-1].to_dict() == {
+            "ID": 2,
+            "Time": updated_df.iloc[-1]["Time"],  # Dynamic time
+            "PointChange": 15,
+            "Pledge": "Pledge1",
+            "Brother": "Smith",
+            "Comment": "Added points",
+            "Approved": False,
+        }
 
+    def test_empty_dataframe_initial_row(self):
+        """Test adding the first row to an empty DataFrame."""
+        data = {
+            "ID": [],
+            "Time": [],
+            "PointChange": [],
+            "Pledge": [],
+            "Brother": [],
+            "Comment": [],
+            "Approved": [],
+        }
+        df = pd.DataFrame(data)
+        updated_df = change_pledge_points(df, "Pledge1", "John", "Initial points", 10)
+        assert len(updated_df) == 1
+        assert updated_df.iloc[0].to_dict() == {
+            "ID": 0,
+            "Time": updated_df.iloc[0]["Time"],  # Dynamic time
+            "PointChange": 10,
+            "Pledge": "Pledge1",
+            "Brother": "John",
+            "Comment": "Initial points",
+            "Approved": False,
+        }
+
+    def test_non_integer_points(self):
+        """Test automatic conversion of non-integer point values."""
+        data = {
+            "ID": [0],
+            "Time": ["2023-10-01"],
+            "PointChange": [10],
+            "Pledge": ["Pledge1"],
+            "Brother": ["John"],
+            "Comment": ["First update"],
+            "Approved": [True],
+        }
+        df = pd.DataFrame(data)
+        updated_df = change_pledge_points(df, "Pledge2", "Jane", "Added points", "20")
+        assert updated_df.iloc[-1]["PointChange"] == 20  # Verify conversion to integer
+
+    def test_invalid_row_length(self):
+        """Test error handling for incorrect row length during append."""
+        data = {
+            "ID": [0],
+            "Time": ["2023-10-01"],
+            "PointChange": [10],
+            "Pledge": ["Pledge1"],
+            "Brother": ["John"],
+            "Comment": ["First update"],
+            "Approved": [True],
+        }
+        df = pd.DataFrame(data)
+        with pytest.raises(Exception, match="The new row must have the same number of columns as the headers."):
+            append_row_to_df(df, [0, "2023-10-05", 10, "Pledge1", "John"])  # Missing values
