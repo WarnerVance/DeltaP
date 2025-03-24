@@ -1,3 +1,5 @@
+import pandas as pd
+
 from PledgePoints.csvutils import append_row_to_df, get_current_time
 
 
@@ -143,3 +145,48 @@ def change_pledge_points(df, pledge, brother, comment, points):
     new_df = append_row_to_df(df, new_row)
     return new_df
 
+
+def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_brother=None, new_comment=None,
+                                id_column_name="ID"):
+    """
+    Author: Warner
+
+    This function allows for the editing of a previously recorded pledge point. You must give the ID of the point you want
+    to edit along with the information that will make up the change. Only specify the values you wish to change.
+    Do not use this function to change approval status. Use change_point_approval function instead.
+    ID and time cannot be changed with this function.
+
+    :param df: points dataframe
+    :param ID: the id of the point you want to change
+    :param new_pledge: The new value for pledge name
+    :param new_points: The new value for the point change
+    :param new_brother: The new value for the brother change
+    :param new_comment: The new value for the comment change
+    :param id_column_name: The name of the column containing the id
+    :return:
+    """
+
+    rows = df.values.tolist()
+    columns = df.columns.tolist()
+    # Most of the time the index of a row and the rows id will be the same, but if it's order by something else, I still
+    # want this function to work
+    index_of_row = int(df.loc[df[id_column_name] == ID].index.tolist()[0])
+
+    # If new values are not specified then they remain the same
+    if new_pledge is None:
+        new_pledge = rows[index_of_row][3]
+    if new_points is None:
+        new_points = rows[index_of_row][2]
+    if new_brother is None:
+        new_brother = rows[index_of_row][4]
+    if new_comment is None:
+        new_comment = rows[index_of_row][5]
+
+    # These two cannot be changed in this function and so remain the same
+    approval = rows[index_of_row][0]
+    time = rows[index_of_row][1]
+
+    # These positions are hardcoded in. Not great programming practice, but whatever man
+    rows[index_of_row] = [ID, time, new_points, new_pledge, new_brother, new_comment, approval]
+    new_df = pd.DataFrame(rows, columns=columns)
+    return new_df
