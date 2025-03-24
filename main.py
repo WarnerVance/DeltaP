@@ -119,7 +119,7 @@ async def give_pledge_points(interaction: discord.Interaction, points: int, pled
         await interaction.response.send_message("Naughty Pledge trying to edit points.")
     points = int(points)
     if not points in range(-128, 128):
-        await interaction.response.send_message("Points must be an integer between -128,128")
+        await interaction.response.send_message("Points must be an integer within the range -128,127.")
     pledge = pledge.title()
     try:
         df = read_csv(master_point_csv_name)
@@ -127,8 +127,8 @@ async def give_pledge_points(interaction: discord.Interaction, points: int, pled
         df.to_csv(master_point_csv_name)
         await interaction.response.send_message(f"{brother}: {points} {pledge} {comment}")
     except exception as error:
+        print(error)
         await interaction.response.send_message(f"There was an error: {str(error)}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
