@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def change_point_approval(df, point_id, new_approval, id_column_name="ID", approved_column_name="Approved"):
+def change_point_approval(df, point_id, new_approval=True, id_column_name="ID", approved_column_name="Approved"):
     """
     This function updates the approval status of a specific point in the provided dataframe
     based on the given point ID. The function ensures that the provided `new_approval`
@@ -110,7 +110,7 @@ def get_unapproved_points(df, approval_column_name="Approved", id_column_name="I
     return df.loc[df[approval_column_name] == False].sort_values(by=id_column_name)
 
 
-def change_approval_with_range(df, start_id, end_id, new_approval, id_column_name="ID",
+def change_approval_with_range(df, start_id, end_id, new_approval=True, id_column_name="ID",
                                approved_column_name="Approved"):
     """
     Author: Warner
@@ -151,7 +151,8 @@ k
     return df
 
 
-def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="ID", approved_column_name="Approved"):
+def change_approval_with_discrete_values(df, ids, new_approval=True, id_column_name="ID",
+                                         approved_column_name="Approved"):
     """
     Author: Warner
 
