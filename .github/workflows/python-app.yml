@@ -25,10 +25,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Debug directory
+      run: |
+        pwd
+        ls -la
+
     - name: Install dependencies
       run: |
-        # Ensure we're in the repository root directory
-        cd ${{ github.workspace }}
         python -m pip install --upgrade pip
         # Install dependencies from requirements.txt
         pip install -r requirements.txt
