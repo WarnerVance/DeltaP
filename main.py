@@ -3,14 +3,16 @@ import asyncio  # Asynchronous I/O support
 import os  # File and path operations
 import ssl  # Secure connection support
 from datetime import datetime  # Date and time handling
+from logging import exception
 
 import aiohttp  # Add this import at the top with other imports
-import discord  # Discord API wrapper
 import pytz  # Timezone support
 from discord.ext import commands  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
 
 from PledgePoints.csvutils import create_csv, read_csv
+from PledgePoints.pledges import change_pledge_points
+from role.role_checking import *
 
 # Warner: This until the  on_ready function was ai generated because I couldn't be bothered
 # Initialize SSL context for secure connections
@@ -109,6 +111,23 @@ async def ping(interaction: discord.Interaction):
     embed.add_field(name="Uptime", value=f"{int(hours)}h {int(minutes)}m {int(seconds)}s", inline=True)
 
     await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="give/take_pledge_points", description="Give or take pledge points from a specific pledge")
+async def give_pledge_points(interaction: discord.Interaction, points: int, pledge: str, brother: str, comment: str):
+    if check_brother_role(interaction) is False:
+        await interaction.response.send_message("Naughty Pledge trying to edit points.")
+    points = int(points)
+    if not points in range(-128, 128):
+        await interaction.response.send_message("Points must be an integer between -128,128")
+    pledge = pledge.title()
+    try:
+        df = read_csv(master_point_csv_name)
+        df = change_pledge_points(df, pledge=pledge, brother=brother, comment=comment, points=points)
+        df.to_csv(master_point_csv_name)
+        await interaction.response.send_message(f"{brother}: {points} {pledge} {comment}")
+    except exception as error:
+        await interaction.response.send_message(f"There was an error: {str(error)}")
 
 
 if __name__ == "__main__":
