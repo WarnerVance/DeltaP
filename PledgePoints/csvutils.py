@@ -44,7 +44,7 @@ def read_csv(filename):
         del df
     dtypes = {columns[0]: "uint32",  # ID should never be negative. The only reason its 32 bits is because I test with a
               # dataset that is 100,000 rows long and would run into overflow problems otherwise.
-              # to optimize an uint16 would be just fine.
+              # If  optimization is needed an uint16 would be just fine.
               columns[2]: "int8",  # This limits point change values to -128 to 127. That shouldn't be an issue, but if
               # you run into overflow problems you can change to int16 or in32.
               columns[3]: "string",

@@ -2,22 +2,17 @@
 import asyncio  # Asynchronous I/O support
 import os  # File and path operations
 import ssl  # Secure connection support
-from datetime import datetime, time as datetime_time  # Date and time handling
+from datetime import datetime  # Date and time handling
 
-import certifi  # SSL certificate handling
-import discord  # Discord API wrapper
-import pandas as pd
-import psutil  # System information
-import pytz  # Timezone support
-from discord import app_commands  # Discord slash commands
-from discord.ext import commands, tasks  # Discord bot commands and scheduled tasks
-from dotenv import load_dotenv
-from pandas import DataFrame
 import aiohttp  # Add this import at the top with other imports
+import discord  # Discord API wrapper
+import pytz  # Timezone support
+from discord.ext import commands  # Discord bot commands and scheduled tasks
+from dotenv import load_dotenv
 
-from PledgePoints.csvutils import create_csv, read_csv, append_row_to_df
+from PledgePoints.csvutils import create_csv, read_csv
 
-# Warner: This unitl on_ready was ai generated because I couldn't be bothered
+# Warner: This until the  on_ready function was ai generated because I couldn't be bothered
 # Initialize SSL context for secure connections
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
