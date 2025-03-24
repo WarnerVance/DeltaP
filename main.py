@@ -3,7 +3,6 @@ import asyncio  # Asynchronous I/O support
 import os  # File and path operations
 import ssl  # Secure connection support
 from datetime import datetime  # Date and time handling
-from logging import exception
 
 import aiohttp  # Add this import at the top with other imports
 import pytz  # Timezone support
@@ -115,22 +114,24 @@ async def ping(interaction: discord.Interaction):
 
 @bot.tree.command(name="give_take_pledge_points", description="Give or take pledge points from a specific pledge")
 async def give_pledge_points(interaction: discord.Interaction, points: int, pledge: str, brother: str, comment: str):
-    if check_brother_role(interaction) is False:
+    if await check_brother_role(interaction) is False:
         await interaction.response.send_message("Naughty Pledge trying to edit points.")
+        return
     points = int(points)
     if not points in range(-128, 128):
         await interaction.response.send_message("Points must be an integer within the range -128,127.")
+        return
     pledge = pledge.title()
     try:
         df = read_csv(master_point_csv_name)
         df = change_pledge_points(df, pledge=pledge, brother=brother, comment=comment, points=points)
         df.to_csv(master_point_csv_name, index=False)
         if points >= 0:
-            sign = "+"
+            points_str = f"+{points}"
         else:
-            sign = "-"
-        await interaction.response.send_message(f"{brother}: {sign}{points} {pledge} {comment}")
-    except exception as error:
+            points_str = str(points)
+        await interaction.response.send_message(f"{brother}: {points_str} {pledge} {comment}")
+    except Exception as error:
         print(error)
         await interaction.response.send_message(f"There was an error: {str(error)}")
 
