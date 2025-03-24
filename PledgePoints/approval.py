@@ -83,7 +83,7 @@ def get_approved_points(df, approval_column_name="Approved", id_column_name="ID"
         approval column is True.
     :rtype: pandas.DataFrame
     """
-    return df.loc[df[approval_column_name] is True].sort_values(by=id_column_name)
+    return df.loc[df[approval_column_name] == True].sort_values(by=id_column_name)
 
 
 def get_unapproved_points(df, approval_column_name="Approved", id_column_name="ID"):
@@ -204,4 +204,22 @@ def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="
     # This iterates through the ids and makes the approval change for each one
     for i in ids:
         df = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
+    return df
+
+
+def delete_unapproved_points(df, approved_column_name="Approved"):
+    """
+    Author: Warner
+
+    Goes through the rows in the DataFrame and deletes any rows that have their value in `approved_column_name~ as
+    False
+    :param df: input points dataframe
+    :type df: pandas.DataFrame
+    :param approved_column_name: The name
+    :type approved_column_name: str
+    :return: ouput dataframe without unapproved points
+    :rtype: pandas.DataFrame
+    """
+    disapproved_idx = df.loc[df[approved_column_name] == False].index
+    df = df.drop(disapproved_idx, axis=0)
     return df
