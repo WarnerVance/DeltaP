@@ -107,7 +107,7 @@ def get_unapproved_points(df, approval_column_name="Approved", id_column_name="I
         by the "ID" column.
     :rtype: pandas.DataFrame
     """
-    return df.loc[df[approval_column_name] is False].sort_values(by=id_column_name)
+    return df.loc[df[approval_column_name] == False].sort_values(by=id_column_name)
 
 
 def change_approval_with_range(df, start_id, end_id, new_approval, id_column_name="ID",
