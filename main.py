@@ -9,7 +9,8 @@ import pytz  # Timezone support
 from discord.ext import commands  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
 
-from PledgePoints.approval import get_unapproved_points, change_point_approval, change_approval_with_discrete_values
+from PledgePoints.approval import get_unapproved_points, change_point_approval, change_approval_with_discrete_values, \
+    delete_unapproved_points
 from PledgePoints.csvutils import create_csv, read_csv
 from PledgePoints.pledges import change_pledge_points
 from role.role_checking import *
@@ -66,10 +67,7 @@ if not master_point_csv_name:
 try:
     if not os.path.exists(master_point_csv_name):
         # Warner: The Default values for columns in the create_csv function are fine here.
-        if create_csv(master_point_csv_name):
-            master_df = read_csv(master_point_csv_name)
-        else:
-            raise UserWarning("csv file doesn't exist and cannot be created.")
+        create_csv(master_point_csv_name)
 
 except Exception as e:
     print(f"Error creating CSV files: {str(e)}")
@@ -162,11 +160,13 @@ async def approve(interaction: discord.Interaction, point_id: str):
         await interaction.response.send_message("You don't have permission to do that.")
     # Reads in the points csv file
     df = await read_csv(master_point_csv_name)
-
     # If theres only one point id to approve
     if "," not in point_id:
         try:
             point_id = int(point_id)
+            if point_id not in get_unapproved_points(df)["ID"].values.tolist():
+                await interaction.response.send_message("Error: This ID is not in the unapproved list")
+                return
             df = change_point_approval(df, point_id, new_approval=True)
             df.to_csv(master_point_csv_name, index=False)
             await interaction.response.send_message(f"Point {point_id} approved")
@@ -175,7 +175,7 @@ async def approve(interaction: discord.Interaction, point_id: str):
             await interaction.response.send_message(f"There was an error: {str(error)}")
     # Splits the id string into a list of ints
     ids = point_id.split(",")
-    for idx in len(ids):
+    for idx in range(len(ids)):
         ids[idx] = int(ids[idx])
     try:
         # Changes the points with the given ids
@@ -186,6 +186,15 @@ async def approve(interaction: discord.Interaction, point_id: str):
     except Exception as error:
         await interaction.response.send_message(f"There was an error: {str(error)}")
 
+
+@bot.tree.command(name="delete_unapproved_points", description="Delete all points that have not been approved.")
+async def delete_unapproved(interaction: discord.Interaction):
+    if await check_eboard_role(interaction) is False and check_info_systems_role(interaction) is False:
+        await interaction.response.send_message("I'm sorry Dave I can't do that. Notifying Standards board")
+        return True
+    df = await read_csv(master_point_csv_name)
+    df = delete_unapproved_points(df)
+    df.to_csv(master_point_csv_name, index=False)
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,3 +1,5 @@
+import pandas as pd
+
 from PledgePoints.csvutils import append_row_to_df, get_current_time
 
 
@@ -182,3 +184,24 @@ def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_br
         new_df.loc[row_mask, "Comment"] = new_comment
     
     return new_df
+
+
+def reset_id(df):
+    """
+    Author: Warner
+
+    This function resets the ID of the pledge point dataframe. It can be used to reset the ids if something gets messed
+    up or just unruly.
+
+    :param df: points dataframe
+    :type df: pandas.DataFrame
+
+    :return: A new dataframe with reset ids.
+    :rtype: pandas.DataFrame
+    """
+    rows = df.values.to_list()
+    id = 0
+    for row in rows:
+        row[0] = id
+        id += 1
+    return pd.DataFrame(rows, columns=df.columns)
