@@ -38,8 +38,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        # Install project dependencies first
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        else
+          echo "Warning: requirements.txt not found"
+        fi
+        # Install development dependencies
         pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Lint with flake8
       run: |
