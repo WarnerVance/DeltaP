@@ -44,8 +44,8 @@ jobs:
         else
           echo "Warning: requirements.txt not found"
         fi
-        # Install development dependencies
-        pip install flake8 pytest
+        # Install test dependencies
+        pip install numpy pytest-asyncio discord.py flake8 pytest
 
     - name: Lint with flake8
       run: |
