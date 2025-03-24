@@ -9,6 +9,7 @@ import pytz  # Timezone support
 from discord.ext import commands  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
 
+from PledgePoints.approval import get_unapproved_points, change_point_approval, change_approval_with_discrete_values
 from PledgePoints.csvutils import create_csv, read_csv
 from PledgePoints.pledges import change_pledge_points
 from role.role_checking import *
@@ -134,6 +135,57 @@ async def give_pledge_points(interaction: discord.Interaction, points: int, pled
     except Exception as error:
         print(error)
         await interaction.response.send_message(f"There was an error: {str(error)}")
+
+
+@bot.tree.command(name="list_pending_points", description="List all points that have yet to be approved")
+async def list_pending_points(interaction: discord.Interaction):
+    if await check_brother_role(interaction) is False:
+        await interaction.response.send_message("Naughty Pledge trying to use the points bot")
+    df = read_csv(master_point_csv_name)
+    unapproved_points_df = get_unapproved_points(df)
+    unapproved_points_list = unapproved_points_df.values.tolist()
+    response = ""
+    for points in unapproved_points_list:
+        if points[2] >= 0:
+            points_str = f"+{points[2]}"
+        else:
+            points_str = str(points[2])
+        entry = f"ID: {points[0]}. {points_str} {points[3]} {points[5]} - {points[4]}\n"
+        response = response + entry
+    await interaction.response.send_message(response)
+
+
+@bot.tree.command(name="approve",
+                  description="Approve points. If you want to approve more than one point then make a comma separated list of IDs ie(4,3,6)")
+async def approve(interaction: discord.Interaction, point_id: str):
+    if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
+        await interaction.response.send_message("You don't have permission to do that.")
+    # Reads in the points csv file
+    df = await read_csv(master_point_csv_name)
+
+    # If theres only one point id to approve
+    if "," not in point_id:
+        try:
+            point_id = int(point_id)
+            df = change_point_approval(df, point_id, new_approval=True)
+            df.to_csv(master_point_csv_name, index=False)
+            await interaction.response.send_message(f"Point {point_id} approved")
+            return True
+        except Exception as error:
+            await interaction.response.send_message(f"There was an error: {str(error)}")
+    # Splits the id string into a list of ints
+    ids = point_id.split(",")
+    for idx in len(ids):
+        ids[idx] = int(ids[idx])
+    try:
+        # Changes the points with the given ids
+        change_approval_with_discrete_values(df, ids, new_approval=True)
+        df.to_csv(master_point_csv_name, index=False)
+        await interaction.response.send_message(f"Points {point_id} approved")
+        return True
+    except Exception as error:
+        await interaction.response.send_message(f"There was an error: {str(error)}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
