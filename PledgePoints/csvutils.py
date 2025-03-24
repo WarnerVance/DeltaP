@@ -49,7 +49,8 @@ def read_csv(filename):
               columns[6]: "bool"}
     # Another option to optimize these dtypes for lower ram usage would be to store Pledge and Brother as int ids and
     # be able to map ids to names using a dict if needed.
-    # Memory usage 3.8 MB with optimizations and 4.9 MB without with a 100000 row dataframe (5.5 MB csv file)
+    # Memory usage 3.8 MB with optimizations and 4.9 MB without with a 100,000 row dataframe (5.5 MB csv file). This hardly
+    # seems worth it for our smaller datasets.
     df = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
     return df
 
