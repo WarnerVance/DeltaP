@@ -131,11 +131,13 @@ def change_pledge_points(df, pledge, brother, comment, points):
 
     # This is a bit of failsafe code that should never run if the above if statement works correctly.
     # It checks if our new_id has previously appeared in the ID column which should never happen
-    if new_id in df["ID"].values:
+    if new_id in df["ID"].values.tolist():
         raise ValueError("The new ID has already appeared in the ID column.")
 
     if type(points) != int:
         points = int(points)
+    if points not in range(-128, 128):
+        raise ValueError("The points value has to be between -128,127")
 
     new_row = [new_id,get_current_time(), points, pledge, brother, comment, False]
     new_df = append_row_to_df(df, new_row)
