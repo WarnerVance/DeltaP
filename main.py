@@ -13,7 +13,7 @@ from PledgePoints.csvutils import create_csv, read_csv
 from PledgePoints.pledges import change_pledge_points
 from role.role_checking import *
 
-# Warner: This until the  on_ready function was ai generated because I couldn't be bothered
+# Warner: This until the on_ready function was ai generated because I couldn't be bothered
 # Initialize SSL context for secure connections
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
