@@ -113,7 +113,7 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@bot.tree.command(name="give/take_pledge_points", description="Give or take pledge points from a specific pledge")
+@bot.tree.command(name="give_take_pledge_points", description="Give or take pledge points from a specific pledge")
 async def give_pledge_points(interaction: discord.Interaction, points: int, pledge: str, brother: str, comment: str):
     if check_brother_role(interaction) is False:
         await interaction.response.send_message("Naughty Pledge trying to edit points.")
@@ -124,8 +124,12 @@ async def give_pledge_points(interaction: discord.Interaction, points: int, pled
     try:
         df = read_csv(master_point_csv_name)
         df = change_pledge_points(df, pledge=pledge, brother=brother, comment=comment, points=points)
-        df.to_csv(master_point_csv_name)
-        await interaction.response.send_message(f"{brother}: {points} {pledge} {comment}")
+        df.to_csv(master_point_csv_name, index=False)
+        if points >= 0:
+            sign = "+"
+        else:
+            sign = "-"
+        await interaction.response.send_message(f"{brother}: {sign}{points} {pledge} {comment}")
     except exception as error:
         print(error)
         await interaction.response.send_message(f"There was an error: {str(error)}")
