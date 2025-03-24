@@ -6,12 +6,12 @@ async def check_eboard_role(interaction: discord.Interaction) -> bool:
 
     Author: Warner
 
-    Checks if the user who triggered the interaction has the "VP Internal" role
+    Checks if the user who triggered the interaction has the "Executive Board" role
 
     :param interaction: The interaction object representing the command or event in
         Discord. This is used to access details about the user and their roles.
     :type interaction: discord.Interaction
-    :return: Returns ``True`` if the user has the "VP Internal" role; otherwise, sends
+    :return: Returns ``True`` if the user has the "Executive Board" role; otherwise, sends
         an ephemeral message to the user and returns ``False``.
     :rtype: bool
     """

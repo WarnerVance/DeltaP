@@ -38,10 +38,6 @@ def read_csv(filename):
     columns = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")
     if not os.path.exists(filename):
         raise FileNotFoundError("The file {} doesn't exist.".format(filename))
-    if columns is None:
-        df = pd.read_csv(filename)
-        columns = df.columns.tolist()
-        del df
     dtypes = {columns[0]: "uint32",  # ID should never be negative. The only reason its 32 bits is because I test with a
               # dataset that is 100,000 rows long and would run into overflow problems otherwise.
               # If  optimization is needed an uint16 would be just fine.
@@ -53,6 +49,7 @@ def read_csv(filename):
               columns[6]: "bool"}
     # Another option to optimize these dtypes for lower ram usage would be to store Pledge and Brother as int ids and
     # be able to map ids to names using a dict if needed.
+    # Memory usage 3.8 MB with optimizations and 4.9 MB without with a 100000 row dataframe (5.5 MB csv file)
     df = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
     return df
 
