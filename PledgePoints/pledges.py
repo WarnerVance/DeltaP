@@ -1,5 +1,3 @@
-import pandas as pd
-
 from PledgePoints.csvutils import append_row_to_df, get_current_time
 
 
@@ -163,30 +161,24 @@ def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_br
     :param new_brother: The new value for the brother change
     :param new_comment: The new value for the comment change
     :param id_column_name: The name of the column containing the id
-    :return:
+    :return: DataFrame with the modified row
     """
+    # Create a copy of the DataFrame to avoid modifying the original
+    new_df = df.copy()
 
-    rows = df.values.tolist()
-    columns = df.columns.tolist()
-    # Most of the time the index of a row and the rows id will be the same, but if it's order by something else, I still
-    # want this function to work
-    index_of_row = int(df.loc[df[id_column_name] == ID].index.tolist()[0])
+    # Find the row to modify
+    row_mask = new_df[id_column_name] == ID
+    if not any(row_mask):
+        raise IndexError(f"No row found with ID {ID}")
 
-    # If new values are not specified then they remain the same
-    if new_pledge is None:
-        new_pledge = rows[index_of_row][3]
-    if new_points is None:
-        new_points = rows[index_of_row][2]
-    if new_brother is None:
-        new_brother = rows[index_of_row][4]
-    if new_comment is None:
-        new_comment = rows[index_of_row][5]
-
-    # These two cannot be changed in this function and so remain the same
-    approval = rows[index_of_row][0]
-    time = rows[index_of_row][1]
-
-    # These positions are hardcoded in. Not great programming practice, but whatever man
-    rows[index_of_row] = [ID, time, new_points, new_pledge, new_brother, new_comment, approval]
-    new_df = pd.DataFrame(rows, columns=columns)
+    # Update only the specified fields
+    if new_pledge is not None:
+        new_df.loc[row_mask, "Pledge"] = new_pledge
+    if new_points is not None:
+        new_df.loc[row_mask, "PointChange"] = new_points
+    if new_brother is not None:
+        new_df.loc[row_mask, "Brother"] = new_brother
+    if new_comment is not None:
+        new_df.loc[row_mask, "Comment"] = new_comment
+    
     return new_df

@@ -1,7 +1,23 @@
+import numpy as np
 import pandas as pd
 import pytest
 
 from PledgePoints.pledges import *
+
+
+@pytest.fixture
+def sample_df():
+    """Fixture to provide a sample DataFrame for testing."""
+    data = {
+        "ID": [1, 2, 3, 4, 5],
+        "Time": [np.datetime64("2024-01-01")] * 5,
+        "PointChange": [10, 20, 30, 40, 50],
+        "Pledge": ["P1", "P2", "P3", "P4", "P5"],
+        "Brother": ["B1", "B2", "B3", "B4", "B5"],
+        "Comment": ["C1", "C2", "C3", "C4", "C5"],
+        "Approved": [True, False, True, False, True]
+    }
+    return pd.DataFrame(data)
 
 
 class TestGetOnePledgePoints:
@@ -301,3 +317,80 @@ class TestChangePledgePoints:
         df = pd.DataFrame(data)
         with pytest.raises(Exception, match="The new row must have the same number of columns as the headers."):
             append_row_to_df(df, [0, "2023-10-05", 10, "Pledge1", "John"])  # Missing values
+
+
+class TestChangePreviousPointEntry:
+    def test_change_previous_point_entry_all_fields(self, sample_df):
+        """Test changing all fields of a point entry."""
+        result = change_previous_point_entry(
+            sample_df,
+            ID=1,
+            new_pledge="NewPledge",
+            new_points=75,
+            new_brother="NewBrother",
+            new_comment="New Comment"
+        )
+        modified_row = result.loc[result["ID"] == 1]
+        assert modified_row["Pledge"].iloc[0] == "NewPledge"
+        assert modified_row["PointChange"].iloc[0] == 75
+        assert modified_row["Brother"].iloc[0] == "NewBrother"
+        assert modified_row["Comment"].iloc[0] == "New Comment"
+        # Check that Time and Approved weren't changed
+        assert modified_row["Time"].iloc[0] == sample_df.loc[sample_df["ID"] == 1, "Time"].iloc[0]
+        assert modified_row["Approved"].iloc[0] == sample_df.loc[sample_df["ID"] == 1, "Approved"].iloc[0]
+
+    def test_change_previous_point_entry_single_field(self, sample_df):
+        """Test changing only one field while leaving others unchanged."""
+        result = change_previous_point_entry(sample_df, ID=1, new_comment="Only Comment Changed")
+        modified_row = result.loc[result["ID"] == 1]
+        original_row = sample_df.loc[sample_df["ID"] == 1]
+
+        # Check that only comment changed
+        assert modified_row["Comment"].iloc[0] == "Only Comment Changed"
+        # Check that other fields remained the same
+        assert modified_row["Pledge"].iloc[0] == original_row["Pledge"].iloc[0]
+        assert modified_row["PointChange"].iloc[0] == original_row["PointChange"].iloc[0]
+        assert modified_row["Brother"].iloc[0] == original_row["Brother"].iloc[0]
+        assert modified_row["Time"].iloc[0] == original_row["Time"].iloc[0]
+        assert modified_row["Approved"].iloc[0] == original_row["Approved"].iloc[0]
+
+    def test_change_previous_point_entry_invalid_id(self, sample_df):
+        """Test that attempting to change a non-existent ID raises an error."""
+        with pytest.raises(IndexError):
+            change_previous_point_entry(sample_df, ID=999, new_comment="Should Fail")
+
+    def test_change_previous_point_entry_custom_id_column(self, sample_df):
+        """Test that custom ID column name works correctly."""
+        df = sample_df.rename(columns={"ID": "CustomID"})
+        result = change_previous_point_entry(
+            df,
+            ID=1,
+            new_pledge="NewPledge",
+            id_column_name="CustomID"
+        )
+        assert result.loc[result["CustomID"] == 1, "Pledge"].iloc[0] == "NewPledge"
+
+    def test_change_previous_point_entry_preserve_data(self, sample_df):
+        """Test that the function preserves all data when modifying an entry."""
+        # First, sort by a different column to change order
+        reordered_df = sample_df.sort_values(by="PointChange", ascending=False)
+        result = change_previous_point_entry(reordered_df, ID=1, new_comment="New Comment")
+
+        # Check that all original rows except the modified one are present and unchanged
+        for idx, row in reordered_df.iterrows():
+            if row["ID"] != 1:  # Skip the modified row
+                matching_rows = result.loc[result["ID"] == row["ID"]]
+                assert not matching_rows.empty, f"Row with ID {row['ID']} not found in result"
+                matching_row = matching_rows.iloc[0]
+                assert row["Pledge"] == matching_row["Pledge"]
+                assert row["PointChange"] == matching_row["PointChange"]
+                assert row["Brother"] == matching_row["Brother"]
+                assert row["Comment"] == matching_row["Comment"]
+                assert row["Approved"] == matching_row["Approved"]
+
+        # Check the modified row
+        modified_rows = result.loc[result["ID"] == 1]
+        assert not modified_rows.empty, "Modified row with ID 1 not found in result"
+        modified_row = modified_rows.iloc[0]
+        assert modified_row["Comment"] == "New Comment"
+        assert len(result) == len(reordered_df)  # No rows were added or removed

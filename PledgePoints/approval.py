@@ -190,7 +190,7 @@ def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="
         - If the length of `ids` exceeds the number of rows in the DataFrame.
     """
     # Input validation
-    if type(ids) != list or tuple:
+    if not isinstance(ids, (list, tuple)):
         raise TypeError("ids must be a list or tuple")
     if type(new_approval) != bool:
         raise TypeError("new_approval must be a boolean")
@@ -198,7 +198,7 @@ def change_approval_with_discrete_values(df, ids, new_approval, id_column_name="
         raise ValueError("ids must contain at least one value")
     if len(ids) > len(df):
         raise ValueError("ids must contain fewer values than the length of the DataFrame")
-    if type(ids[0]) != int:
+    if not all(isinstance(id, int) for id in ids):
         raise TypeError("ids must contain only integers")
 
     # This iterates through the ids and makes the approval change for each one
