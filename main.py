@@ -158,6 +158,7 @@ async def list_pending_points(interaction: discord.Interaction):
 async def approve(interaction: discord.Interaction, point_id: str):
     if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("You don't have permission to do that.")
+        return
     # Reads in the points csv file
     df = await read_csv(master_point_csv_name)
     # If theres only one point id to approve
@@ -189,12 +190,13 @@ async def approve(interaction: discord.Interaction, point_id: str):
 
 @bot.tree.command(name="delete_unapproved_points", description="Delete all points that have not been approved.")
 async def delete_unapproved(interaction: discord.Interaction):
-    if await check_eboard_role(interaction) is False and check_info_systems_role(interaction) is False:
+    if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("I'm sorry Dave I can't do that. Notifying Standards board")
         return True
     df = await read_csv(master_point_csv_name)
     df = delete_unapproved_points(df)
     df.to_csv(master_point_csv_name, index=False)
+    await interaction.response.send_message("Successfully deleted all unapproved points")
 
 if __name__ == "__main__":
     asyncio.run(main())
