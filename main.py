@@ -154,7 +154,7 @@ async def list_pending_points(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="approve",
-                  description="Approve points. If you want to approve more than one point then make a comma separated list of IDs ie(4,3,6)")
+                  description="Approve points. Enter points like 4,3,6)")
 async def approve(interaction: discord.Interaction, point_id: str):
     if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("You don't have permission to do that.")
