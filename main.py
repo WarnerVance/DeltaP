@@ -91,24 +91,34 @@ async def main():
 
 @bot.tree.command(name="ping", description="Check if the bot is responsive and get its latency")
 async def ping(interaction: discord.Interaction):
+    # Send initial response and get the timestamp
+    start_time = datetime.now(pytz.UTC)
+    await interaction.response.send_message("Calculating ping...")
+
+    # Get WebSocket latency
+    websocket_latency = round(bot.latency * 1000)  # Convert to milliseconds
+    
     # Calculate uptime
     uptime = datetime.now(pytz.UTC) - bot.start_time
     hours = uptime.total_seconds() // 3600
     minutes = (uptime.total_seconds() % 3600) // 60
     seconds = uptime.total_seconds() % 60
 
-    # Get bot latency
-    latency = round(bot.latency * 1000)  # Convert to milliseconds
-
     # Create embed for better presentation
     embed = discord.Embed(
         title="🏓 Pong!",
         color=discord.Color.green()
     )
-    embed.add_field(name="Latency", value=f"{latency}ms", inline=True)
+
+    # Calculate API latency after creating the embed
+    api_latency = round((datetime.now(pytz.UTC) - start_time).total_seconds() * 1000)  # Convert to milliseconds
+
+    embed.add_field(name="API Latency", value=f"{api_latency}ms", inline=True)
+    embed.add_field(name="WebSocket Latency", value=f"{websocket_latency}ms", inline=True)
     embed.add_field(name="Uptime", value=f"{int(hours)}h {int(minutes)}m {int(seconds)}s", inline=True)
 
-    await interaction.response.send_message(embed=embed)
+    # Edit the original response with the embed
+    await interaction.edit_original_response(content=None, embed=embed)
 
 
 @bot.tree.command(name="give_take_pledge_points", description="Give or take pledge points from a specific pledge")
@@ -141,6 +151,8 @@ async def list_pending_points(interaction: discord.Interaction):
         await interaction.response.send_message("Naughty Pledge trying to use the points bot")
     df = read_csv(master_point_csv_name)
     unapproved_points_df = get_unapproved_points(df)
+    if unapproved_points_df is False:
+        await interaction.response.send_message("No pending points to list.")
     unapproved_points_list = unapproved_points_df.values.tolist()
     response = ""
     for points in unapproved_points_list:
@@ -158,8 +170,13 @@ async def list_pending_points(interaction: discord.Interaction):
 async def approve(interaction: discord.Interaction, point_id: str):
     if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("You don't have permission to do that.")
+        return
     # Reads in the points csv file
-    df = await read_csv(master_point_csv_name)
+    try:
+        df = read_csv(master_point_csv_name)
+    except Exception as error:
+        await interaction.response.send_message(f"There was an error: {str(error)}")
+        return
     # If theres only one point id to approve
     if "," not in point_id:
         try:
@@ -175,11 +192,11 @@ async def approve(interaction: discord.Interaction, point_id: str):
             await interaction.response.send_message(f"There was an error: {str(error)}")
     # Splits the id string into a list of ints
     ids = point_id.split(",")
-    for idx in range(len(ids)):
-        ids[idx] = int(ids[idx])
+    for idx, ID in enumerate(ids):
+        ids[idx] = int(ID)
     try:
         # Changes the points with the given ids
-        change_approval_with_discrete_values(df, ids, new_approval=True)
+        df = change_approval_with_discrete_values(df, ids, new_approval=True)
         df.to_csv(master_point_csv_name, index=False)
         await interaction.response.send_message(f"Points {point_id} approved")
         return True
@@ -189,12 +206,24 @@ async def approve(interaction: discord.Interaction, point_id: str):
 
 @bot.tree.command(name="delete_unapproved_points", description="Delete all points that have not been approved.")
 async def delete_unapproved(interaction: discord.Interaction):
-    if await check_eboard_role(interaction) is False and check_info_systems_role(interaction) is False:
+    if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("I'm sorry Dave I can't do that. Notifying Standards board")
-        return True
-    df = await read_csv(master_point_csv_name)
-    df = delete_unapproved_points(df)
-    df.to_csv(master_point_csv_name, index=False)
+        return
+
+    try:
+        df = read_csv(master_point_csv_name)
+        original_length = len(df)
+        df2 = delete_unapproved_points(df)
+
+        if len(df2) == original_length:
+            await interaction.response.send_message("No unapproved points to delete.")
+            return
+
+        df2.to_csv(master_point_csv_name, index=False)
+        await interaction.response.send_message("Successfully deleted all unapproved points")
+
+    except Exception as error:
+        await interaction.response.send_message(f"An error occurred: {str(error)}")
 
 if __name__ == "__main__":
     asyncio.run(main())
