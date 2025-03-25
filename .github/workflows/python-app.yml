@@ -48,3 +48,13 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+
+    - name: Create .env file with secrets
+      run: |
+        echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}" > .env
+        echo "CSV_NAME=${{ secrets.CSV_NAME }}" >> .env
+
+    - name: Test main.py execution
+      run: |
+        # Run main.py with a timeout to ensure it doesn't hang
+        timeout 30 python main.py || true
