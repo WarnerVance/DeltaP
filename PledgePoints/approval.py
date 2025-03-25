@@ -96,7 +96,7 @@ def get_unapproved_points(df, approval_column_name="Approved", id_column_name="I
     approval column has a value of `False`. The resulting rows are sorted
     based on the `id_column_name` column.
 
-    If there are no unapproved rows, the function returns False.
+    If there are no unapproved rows, the function returns an empty DataFrame.
 
     :param id_column_name: The name of the column in the DataFrame that stores the point ID.
     :type id_column_name: str
