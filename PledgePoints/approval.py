@@ -40,13 +40,13 @@ def change_point_approval(df, point_id, new_approval=True, id_column_name="ID", 
     # This finds the index values for the approval and ID columns from the given dataframe.
     columns = df.columns.tolist()
     approval_idx, id_idx = None, None
-    for idx in range(len(columns)):
+    for idx, column in enumerate(columns):
         if (approval_idx is not None) and (id_idx is not None):
             break  # This ends the loop if we've found both of our column indices
-        if columns[idx] == approved_column_name:  # This finds the index of the approval column
+        if column == approved_column_name:  # This finds the index of the approval column
             approval_idx = idx
             continue
-        if columns[idx] == id_column_name:  # This finds the index of the id column
+        if column == id_column_name:  # This finds the index of the id column
             id_idx = idx
             continue
 
@@ -218,7 +218,7 @@ def delete_unapproved_points(df, approved_column_name="Approved"):
     :type df: pandas.DataFrame
     :param approved_column_name: The name
     :type approved_column_name: str
-    :return: ouput dataframe without unapproved points
+    :return: output dataframe without unapproved points
     :rtype: pandas.DataFrame
     """
     disapproved_idx = df.loc[df[approved_column_name] == False].index
