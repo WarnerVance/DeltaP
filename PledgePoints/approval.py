@@ -96,6 +96,8 @@ def get_unapproved_points(df, approval_column_name="Approved", id_column_name="I
     approval column has a value of `False`. The resulting rows are sorted
     based on the `id_column_name` column.
 
+    If there are no unapproved rows, the function returns False.
+
     :param id_column_name: The name of the column in the DataFrame that stores the point ID.
     :type id_column_name: str
     :param df: The input DataFrame containing rows and an approval column.
@@ -212,8 +214,8 @@ def delete_unapproved_points(df, approved_column_name="Approved"):
     """
     Author: Warner
 
-    Goes through the rows in the DataFrame and deletes any rows that have their value in `approved_column_name~ as
-    False
+    Goes through the rows in the DataFrame and deletes any rows that have their value in `approved_column_name` set to
+    False. If there are no false rows, the function returns the original DataFrame.
     :param df: input points dataframe
     :type df: pandas.DataFrame
     :param approved_column_name: The name
@@ -221,6 +223,8 @@ def delete_unapproved_points(df, approved_column_name="Approved"):
     :return: output dataframe without unapproved points
     :rtype: pandas.DataFrame
     """
-    disapproved_idx = df.loc[df[approved_column_name] == False].index
+    disapproved_idx = df.loc[df[approved_column_name] == False].index.tolist()
+    if len(disapproved_idx) == 0:
+        return df
     df = df.drop(disapproved_idx, axis=0)
     return df
