@@ -123,6 +123,19 @@ async def ping(interaction: discord.Interaction):
 
 @bot.tree.command(name="give_take_pledge_points", description="Give or take pledge points from a specific pledge")
 async def give_pledge_points(interaction: discord.Interaction, points: int, pledge: str, brother: str, comment: str):
+    """
+        Handles the command to give or deduct pledge points for a specific pledge. If the user is
+        not authorized, the operation fails. The function ensures valid range for points and updates
+        the pledge data accordingly in the master CSV file. Errors are logged, and users are notified
+        if operations fail.
+
+        Parameters:
+            interaction (discord.Interaction): The interaction object representing the command invocation.
+            points (int): The amount of pledge points to add or subtract. Must be in range -128 to 127.
+            pledge (str): Name of the pledge to modify.
+            brother (str): Name of the person responsible for the action.
+            comment (str): A comment or note explaining the modification.
+    """
     if await check_brother_role(interaction) is False:
         await interaction.response.send_message("Naughty Pledge trying to edit points.")
         return
@@ -147,6 +160,22 @@ async def give_pledge_points(interaction: discord.Interaction, points: int, pled
 
 @bot.tree.command(name="list_pending_points", description="List all points that have yet to be approved")
 async def list_pending_points(interaction: discord.Interaction):
+    """
+    Command to list all unapproved points. It retrieves and formats a list of points that
+    have not yet been approved by reading a CSV file and generating a response message
+    to display the results. If the command is attempted by a user without appropriate
+    permissions, an error message is sent.
+
+    Arguments:
+        interaction (discord.Interaction): The interaction object representing the
+            command invocation context.
+
+    Raises:
+        None
+
+    Returns:
+        None
+    """
     if await check_brother_role(interaction) is False:
         await interaction.response.send_message("Naughty Pledge trying to use the points bot")
         return
@@ -169,6 +198,26 @@ async def list_pending_points(interaction: discord.Interaction):
 @bot.tree.command(name="approve",
                   description="Approve points. Enter points like 4,3,6)")
 async def approve(interaction: discord.Interaction, point_id: str):
+    """
+    Approves specific points by their IDs. The points can either be a single ID or a
+    comma-separated list of IDs. The command validates the user's role permissions
+    before proceeding. Points' approval status is updated in the points CSV file, and
+    a confirmation message is sent upon successful execution.
+
+    Args:
+        interaction (discord.Interaction): The interaction object containing data
+            about the command and user invoking it.
+        point_id (str): A string containing a single point ID or a list of point IDs
+            in a comma-separated format to be approved.
+
+    Raises:
+        Exception: Raised when there is an issue reading or writing the CSV file, or
+            if there's an issue processing the IDs. Corresponding error messages are
+            sent to the user.
+    Returns:
+        bool: Returns True if the points were successfully approved. If the operation
+            cannot be completed due to permissions or errors, no value is returned.
+    """
     if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("You don't have permission to do that.")
         return
@@ -207,6 +256,20 @@ async def approve(interaction: discord.Interaction, point_id: str):
 
 @bot.tree.command(name="delete_unapproved_points", description="Delete all points that have not been approved.")
 async def delete_unapproved(interaction: discord.Interaction):
+    """
+    Deletes all unapproved points from a dataset. The command is only executable
+    by users with specific roles defined in the system. If no unapproved points
+    are identified, the caller is notified. Any exceptions raised during execution
+    are also reported back to the caller.
+
+    Args:
+        interaction (discord.Interaction): The interaction object representing the
+                                            user's command invocation.
+
+    Raises:
+        Exception: Any unexpected error encountered during processing is caught
+                   and the error message is sent to the user as feedback.
+    """
     if await check_eboard_role(interaction) is False and await check_info_systems_role(interaction) is False:
         await interaction.response.send_message("I'm sorry Dave I can't do that. Notifying Standards board")
         return
