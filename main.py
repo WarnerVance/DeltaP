@@ -149,9 +149,10 @@ async def give_pledge_points(interaction: discord.Interaction, points: int, pled
 async def list_pending_points(interaction: discord.Interaction):
     if await check_brother_role(interaction) is False:
         await interaction.response.send_message("Naughty Pledge trying to use the points bot")
+        return
     df = read_csv(master_point_csv_name)
     unapproved_points_df = get_unapproved_points(df)
-    if unapproved_points_df is False:
+    if len(unapproved_points_df) == 0:
         await interaction.response.send_message("No pending points to list.")
     unapproved_points_list = unapproved_points_df.values.tolist()
     response = ""
