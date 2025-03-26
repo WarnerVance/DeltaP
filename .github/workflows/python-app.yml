@@ -58,14 +58,16 @@ jobs:
         echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}" > .env
         echo "CSV_NAME=${{ secrets.CSV_NAME }}" >> .env
 
-    - name: Test main.py execution
+    - name: Test main.py execution (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
       run: |
-        # Run main.py with a timeout to ensure it doesn't hang
-        if [ "$RUNNER_OS" = "Windows" ]; then
-          powershell -Command "Start-Process python -ArgumentList 'main.py' -Timeout 15 -NoNewWindow"
-        else
-          timeout 15 python main.py || true
-        fi
+        Start-Process python -ArgumentList "main.py" -Timeout 15 -NoNewWindow
+
+    - name: Test main.py execution (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        timeout 15 python main.py || true
 
     - name: Upload test artifacts
       if: always()
