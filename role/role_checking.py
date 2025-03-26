@@ -41,7 +41,7 @@ async def check_brother_role(interaction: discord.Interaction) -> bool:
     return True
 
 
-async def check_info_systems_role(interaction: discord.Interaction):
+async def check_info_systems_role(interaction: discord.Interaction) -> bool:
     """
 
     Author: Warner
