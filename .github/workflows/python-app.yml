@@ -61,7 +61,7 @@ jobs:
     - name: Test main.py execution
       run: |
         # Run main.py with a timeout to ensure it doesn't hang
-        timeout 15 python main.py || true
+        python main.py
 
     - name: Upload test artifacts
       if: always()
