@@ -62,7 +62,12 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Start-Process python -ArgumentList "main.py" -Timeout 15 -NoNewWindow
+        $process = Start-Process python -ArgumentList "main.py" -NoNewWindow -PassThru
+        try {
+          $process.WaitForExit(15000)  # 15 seconds timeout
+        } catch {
+          Stop-Process -Id $process.Id -Force
+        }
 
     - name: Test main.py execution (Unix)
       if: matrix.os != 'windows-latest'
