@@ -112,45 +112,45 @@ def get_unapproved_points(df, approval_column_name="Approved", id_column_name="I
     return df.loc[df[approval_column_name] == False].sort_values(by=id_column_name)
 
 
-def change_approval_with_range(df, start_id, end_id, new_approval=True, id_column_name="ID",
-                               approved_column_name="Approved"):
-    """
-    Author: Warner
-
-    Updates the approval status of entries in a DataFrame for a range of IDs. This
-    function is intended to assist in bulk approval or disapproval of records by
-    iterating through a given range of IDs and updating their status.
-
-    :param df: The DataFrame containing the data to be updated.
-    :param start_id: The starting ID of the range. Must be less than or equal to
-        `end_id`.
-    :param end_id: The ending ID of the range.
-    :param new_approval: The new approval status to assign to entries within the
-        specified ID range.
-    :param id_column_name: The name of the column in the DataFrame that contains the
-        ID values. Defaults to "ID".
-    :param approved_column_name: The name of the column in the DataFrame that
-        contains the approval status. Defaults to "Approved".
-    :return: The updated DataFrame with the approval statuses modified for the given
-        ID range.
-k
-    """
-    # This check various input validation things
-    if start_id < 0 or end_id < 0:
-        raise ValueError("ID values must be positive integers")
-    if start_id > len(df) or end_id > len(df):
-        raise ValueError("ID values must be less than the length of the DataFrame")
-    if type(start_id) != int or type(end_id) != int:
-        raise TypeError("ID values must be integers")
-
-    # If the user swaps the start and end ids then we switch tem
-    if start_id > end_id:
-        start_id, end_id = end_id, start_id
-
-    # This iterates through the ids and makes the approval change for each one
-    for i in range(start_id, end_id + 1):
-        df = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
-    return df
+# def change_approval_with_range(df, start_id, end_id, new_approval=True, id_column_name="ID",
+#                                approved_column_name="Approved"):
+#     """
+#     Author: Warner
+#
+#     Updates the approval status of entries in a DataFrame for a range of IDs. This
+#     function is intended to assist in bulk approval or disapproval of records by
+#     iterating through a given range of IDs and updating their status.
+#
+#     :param df: The DataFrame containing the data to be updated.
+#     :param start_id: The starting ID of the range. Must be less than or equal to
+#         `end_id`.
+#     :param end_id: The ending ID of the range.
+#     :param new_approval: The new approval status to assign to entries within the
+#         specified ID range.
+#     :param id_column_name: The name of the column in the DataFrame that contains the
+#         ID values. Defaults to "ID".
+#     :param approved_column_name: The name of the column in the DataFrame that
+#         contains the approval status. Defaults to "Approved".
+#     :return: The updated DataFrame with the approval statuses modified for the given
+#         ID range.
+# k
+#     """
+#     # This check various input validation things
+#     if start_id < 0 or end_id < 0:
+#         raise ValueError("ID values must be positive integers")
+#     if start_id > len(df) or end_id > len(df):
+#         raise ValueError("ID values must be less than the length of the DataFrame")
+#     if type(start_id) != int or type(end_id) != int:
+#         raise TypeError("ID values must be integers")
+#
+#     # If the user swaps the start and end ids then we switch tem
+#     if start_id > end_id:
+#         start_id, end_id = end_id, start_id
+#
+#     # This iterates through the ids and makes the approval change for each one
+#     for i in range(start_id, end_id + 1):
+#         df = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
+#     return df
 
 
 def change_approval_with_discrete_values(df, ids, new_approval=True, id_column_name="ID",

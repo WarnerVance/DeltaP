@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
 import discord
-from role.role_checking import check_eboard_role, check_brother_role
+import pytest
+
+from role.role_checking import check_eboard_role, check_brother_role, check_info_systems_role
 
 
 @pytest.fixture
@@ -66,6 +68,34 @@ async def test_check_brother_role_failure(mock_interaction):
 
     # Execute
     result = await check_brother_role(mock_interaction)
+
+    # Assert
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_check_info_role_success(mock_interaction):
+    # Setup
+    info_role = MagicMock()
+    info_role.name = "Info Systems"
+    mock_interaction.guild.roles = [info_role]
+    mock_interaction.user.roles = [info_role]
+
+    # Execute
+    result = await check_info_systems_role(mock_interaction)
+
+    # Assert
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_check_brother_role_failure(mock_interaction):
+    # Setup
+    mock_interaction.guild.roles = []
+    mock_interaction.user.roles = []
+
+    # Execute
+    result = await check_info_systems_role(mock_interaction)
 
     # Assert
     assert result is False

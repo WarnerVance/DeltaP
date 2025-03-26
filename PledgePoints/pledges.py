@@ -191,7 +191,8 @@ def reset_id(df):
     Author: Warner
 
     This function resets the ID of the pledge point dataframe. It can be used to reset the ids if something gets messed
-    up or just unruly.
+    up or just unruly. It will sort the dataframe from first time to last time and then start from zero so that the
+    earliest point will have an id of zero.
 
     :param df: points dataframe
     :type df: pandas.DataFrame
@@ -199,9 +200,10 @@ def reset_id(df):
     :return: A new dataframe with reset ids.
     :rtype: pandas.DataFrame
     """
-    rows = df.values.to_list()
-    id = 0
+    rows = df.values.tolist()
+    rows = sorted(rows, key=lambda x: x[1])
+    point_id = 0
     for row in rows:
-        row[0] = id
-        id += 1
+        row[0] = point_id
+        point_id += 1
     return pd.DataFrame(rows, columns=df.columns)

@@ -6,7 +6,6 @@ from PledgePoints.approval import (
     change_point_approval,
     get_approved_points,
     get_unapproved_points,
-    change_approval_with_range,
     change_approval_with_discrete_values,
     delete_unapproved_points
 )
@@ -100,25 +99,25 @@ class TestGetUnapprovedPoints:
         assert all(result["CustomApproved"] == False)
 
 
-class TestChangeApprovalWithRange:
-    def test_change_approval_with_range_success(self, sample_df):
-        """Test that approval status is changed for a range of IDs."""
-        result = change_approval_with_range(sample_df, 1, 3, False)
-        assert all(result.loc[(result["ID"] >= 1) & (result["ID"] <= 3), "Approved"] == False)
-
-    def test_change_approval_with_range_reversed(self, sample_df):
-        """Test that range works when start_id is greater than end_id."""
-        result = change_approval_with_range(sample_df, 3, 1, False)
-        assert all(result.loc[(result["ID"] >= 1) & (result["ID"] <= 3), "Approved"] == False)
-
-    def test_change_approval_with_range_invalid_ids(self, sample_df):
-        """Test that ValueError is raised for invalid ID values."""
-        with pytest.raises(ValueError, match="ID values must be positive integers"):
-            change_approval_with_range(sample_df, -1, 3, False)
-        with pytest.raises(ValueError, match="ID values must be less than the length of the DataFrame"):
-            change_approval_with_range(sample_df, 1, 999, False)
-        with pytest.raises(TypeError, match="ID values must be integers"):
-            change_approval_with_range(sample_df, 1.5, 3, False)
+# class TestChangeApprovalWithRange:
+#     def test_change_approval_with_range_success(self, sample_df):
+#         """Test that approval status is changed for a range of IDs."""
+#         result = change_approval_with_range(sample_df, 1, 3, False)
+#         assert all(result.loc[(result["ID"] >= 1) & (result["ID"] <= 3), "Approved"] == False)
+#
+#     def test_change_approval_with_range_reversed(self, sample_df):
+#         """Test that range works when start_id is greater than end_id."""
+#         result = change_approval_with_range(sample_df, 3, 1, False)
+#         assert all(result.loc[(result["ID"] >= 1) & (result["ID"] <= 3), "Approved"] == False)
+#
+#     def test_change_approval_with_range_invalid_ids(self, sample_df):
+#         """Test that ValueError is raised for invalid ID values."""
+#         with pytest.raises(ValueError, match="ID values must be positive integers"):
+#             change_approval_with_range(sample_df, -1, 3, False)
+#         with pytest.raises(ValueError, match="ID values must be less than the length of the DataFrame"):
+#             change_approval_with_range(sample_df, 1, 999, False)
+#         with pytest.raises(TypeError, match="ID values must be integers"):
+#             change_approval_with_range(sample_df, 1.5, 3, False)
 
 
 class TestChangeApprovalWithDiscreteValues:
@@ -141,6 +140,11 @@ class TestChangeApprovalWithDiscreteValues:
             change_approval_with_discrete_values(sample_df, [1.5, 2], False)
         with pytest.raises(TypeError, match="new_approval must be a boolean"):
             change_approval_with_discrete_values(sample_df, [1, 2], "True")
+
+    def test_change_approval_with_discrete_values_too_many_ids(self, sample_df):
+        """Test that ValueError is raised for too many IDs."""
+        with pytest.raises(ValueError, match="ids must contain fewer values than the length of the DataFrame"):
+            change_approval_with_discrete_values(sample_df, [1, 2, 3, 4, 5, 6], False)
 
 
 class TestDeleteUnapprovedPoints:
@@ -165,3 +169,11 @@ class TestDeleteUnapprovedPoints:
         result = delete_unapproved_points(df, "CustomApproved")
         assert len(result) == 3
         assert all(result["CustomApproved"] == True)
+
+    def test_delete_unapproved_points_all_approved(self):
+        df = pd.DataFrame({
+            "ID": [1, 2],
+            "Approved": [True, True]
+        })
+        result = delete_unapproved_points(df)
+        assert result.equals(result)

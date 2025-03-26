@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import pytest
 
 from PledgePoints.pledges import *
@@ -74,6 +73,77 @@ class TestGetOnePledgePoints:
         pledge = "Pledge1"
         result = get_one_pledge_points(df, pledge)
         assert result == 0
+
+
+class TestResetID:
+    def test_reset_id_correct_order(self):
+        """Test reset_id correctly resets IDs when time is already sorted."""
+        data = {
+            "ID": [10, 11, 12],
+            "Time": ["2023-10-01", "2023-10-02", "2023-10-03"],
+            "PointChange": [10, 20, 30],
+            "Pledge": ["Pledge1", "Pledge2", "Pledge3"],
+        }
+        df = pd.DataFrame(data)
+        result = reset_id(df)
+        assert list(result["ID"]) == [0, 1, 2]
+
+    def test_reset_id_unsorted_timestamps(self):
+        """Test reset_id reorders IDs based on ascending time order."""
+        data = {
+            "ID": [2, 0, 1],
+            "Time": ["2023-10-03", "2023-10-01", "2023-10-02"],
+            "PointChange": [30, 10, 20],
+            "Pledge": ["Pledge3", "Pledge1", "Pledge2"],
+        }
+        df = pd.DataFrame(data)
+        result = reset_id(df)
+        assert list(result["ID"]) == [0, 1, 2]
+        assert list(result["Time"]) == ["2023-10-01", "2023-10-02", "2023-10-03"]
+
+    def test_reset_id_empty_dataframe(self):
+        """Test reset_id with an empty DataFrame."""
+        data = {
+            "ID": [],
+            "Time": [],
+            "PointChange": [],
+            "Pledge": [],
+        }
+        df = pd.DataFrame(data)
+        result = reset_id(df)
+        assert result.empty
+
+    def test_reset_id_duplicate_timestamps(self):
+        """Test reset_id behavior with duplicate timestamps."""
+        data = {
+            "ID": [0, 1, 2],
+            "Time": ["2023-10-01", "2023-10-01", "2023-10-02"],
+            "PointChange": [10, 20, 30],
+            "Pledge": ["Pledge1", "Pledge1", "Pledge2"],
+        }
+        df = pd.DataFrame(data)
+        result = reset_id(df)
+        assert list(result["ID"]) == [0, 1, 2]
+        assert list(result["Time"]) == ["2023-10-01", "2023-10-01", "2023-10-02"]
+
+    def test_reset_id_preserve_data(self):
+        """Test reset_id ensures all columns (except ID) remain unchanged."""
+        data = {
+            "ID": [99, 98, 97],
+            "Time": ["2023-10-01", "2023-10-03", "2023-10-02"],
+            "PointChange": [10, 20, 15],
+            "Pledge": ["Pledge1", "Pledge3", "Pledge2"],
+        }
+        df = pd.DataFrame(data)
+        result = reset_id(df)
+        # Check IDs are reset correctly
+        assert list(result["ID"]) == [0, 1, 2]
+        # Check other columns remain unchanged (after sorting)
+        assert list(result["Time"]) == ["2023-10-01", "2023-10-02", "2023-10-03"]
+        assert list(result["PointChange"]) == [10, 15, 20]
+        assert list(result["Pledge"]) == ["Pledge1", "Pledge2", "Pledge3"]
+
+
 
 
 
@@ -317,6 +387,21 @@ class TestChangePledgePoints:
         df = pd.DataFrame(data)
         with pytest.raises(Exception, match="The new row must have the same number of columns as the headers."):
             append_row_to_df(df, [0, "2023-10-05", 10, "Pledge1", "John"])  # Missing values
+
+    def test_point_change_too_high(self):
+        """Test error handling for point change being too high."""
+        data = {
+            "ID": [0],
+            "Time": ["2023-10-01"],
+            "PointChange": [10],
+            "Pledge": ["Pledge1"],
+            "Brother": ["John"],
+            "Comment": ["First update"],
+            "Approved": [True],
+        }
+        df = pd.DataFrame(data)
+        with pytest.raises(Exception, match="The points value has to be between -128,127"):
+            change_pledge_points(df, "Pledge1", "John", "Added points", 150)
 
 
 class TestChangePreviousPointEntry:

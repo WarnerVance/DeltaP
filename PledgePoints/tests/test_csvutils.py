@@ -3,7 +3,53 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+
 from PledgePoints.csvutils import create_csv, read_csv, get_current_time, append_row_to_df
+
+
+class TestReadCsv:
+    def test_read_csv_success(self, tmpdir):
+        """Test that a valid CSV file is read successfully."""
+        filename = os.path.join(tmpdir, "test.csv")
+        columns = ["ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved"]
+        df = pd.DataFrame([[1, get_current_time(), 10, "Pledge1", "John", "Test", True]], columns=columns)
+        df.to_csv(filename, index=False)
+
+        result = read_csv(filename)
+        pd.testing.assert_frame_equal(result, df, check_dtype=False)
+
+    def test_read_csv_file_not_found(self):
+        """Test that FileNotFoundError is raised when the file does not exist."""
+        with pytest.raises(FileNotFoundError):
+            read_csv("non_existent_file.csv")
+
+    def test_read_csv_dtype_check(self, tmpdir):
+        """Test if the function correctly handles specified dtypes for columns."""
+        filename = os.path.join(tmpdir, "test_with_types.csv")
+        data = {
+            "ID": [1],
+            "Time": [get_current_time()],
+            "PointChange": [40],
+            "Pledge": ["Doe"],
+            "Brother": ["Jane"],
+            "Comment": ["Test Comment"],
+            "Approved": [False]
+        }
+        pd.DataFrame(data).to_csv(filename, index=False)
+
+        result = read_csv(filename)
+        assert result["ID"].dtype == "uint16"
+        assert result["PointChange"].dtype == "int8"
+        assert result["Pledge"].dtype == "string"
+
+    def test_read_csv_missing_column(self, tmpdir):
+        """Test that the function raises an error when a required column is missing."""
+        filename = os.path.join(tmpdir, "invalid.csv")
+        invalid_df = pd.DataFrame({"Column1": [1], "Column2": ["Value"]})
+        invalid_df.to_csv(filename, index=False)
+
+        with pytest.raises(ValueError):
+            read_csv(filename)
 
 
 @pytest.fixture
@@ -31,12 +77,6 @@ class TestCreateCsv:
         result = create_csv(temp_file)
         expected_columns = ["ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved"]
         assert pd.read_csv(result).columns.tolist() == expected_columns
-
-class TestReadCsv:
-    def test_read_csv_file_not_found(self):
-        """Test that FileNotFoundError is raised if the file does not exist."""
-        with pytest.raises(FileNotFoundError):
-            read_csv("non_existent_file.csv")
 
 
 class TestGetCurrentTime:
