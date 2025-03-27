@@ -15,7 +15,7 @@ def setup(bot: commands.Bot):
         start_time = datetime.now(pytz.UTC)
         await interaction.response.send_message("Calculating ping...")
 
-        # Get WebSocket latency
+        # Get WebSocket latency. This is a single request and the response.
         websocket_latency = round(bot.latency * 1000)  # Convert to milliseconds
 
         # Calculate uptime
@@ -31,9 +31,7 @@ def setup(bot: commands.Bot):
         )
 
         # Calculate API latency after creating the embed
-        api_latency = round((datetime.now(pytz.UTC) - start_time).total_seconds() * 1000)  # Convert to milliseconds
 
-        embed.add_field(name="API Latency", value=f"{api_latency}ms", inline=True)
         embed.add_field(name="WebSocket Latency", value=f"{websocket_latency}ms", inline=True)
         embed.add_field(name="Uptime", value=f"{int(hours)}h {int(minutes)}m {int(seconds)}s", inline=True)
 
