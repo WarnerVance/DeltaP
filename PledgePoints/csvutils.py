@@ -2,32 +2,34 @@ import os
 import time
 
 import numpy as np
+import pandas
 import pandas as pd
 
 
-def create_csv(filename, columns = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")):
+def create_csv(filename: str,
+               columns: tuple = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")) -> str:
     """
     Author: Warner
-    This will create a csv file with the specified columns.
-    :param columns: The columns to include in the csv file.
-    :type columns: tuple or list
+    This will create a csv file with the points columns in the correct order.
     :param filename: The name/path of the file to create.
     :type filename: str
+    :param columns: The names of the columns to include in the file.
+    :type columns: tuple
     :return: Boolean indicating if the file was successfully created.
     :rtype: bool
     """
     if os.path.exists(filename):
         raise FileExistsError("The file {} already exists.".format(filename))
-    df = pd.DataFrame(columns=columns)
+    df: pandas.DataFrame = pd.DataFrame(columns=columns)
     df.to_csv(filename, index=False)
     return filename
 
 
-def read_csv(filename):
+def read_csv(filename: str) -> pandas.DataFrame:
     """
     Author: Warner
 
-    Reads a CSV file and returns a pandas DataFrame.
+    Reads the points CSV file and returns a pandas DataFrame.
     :param filename: The name of the file to read.
     :type filename: str
     :return: A pandas DataFrame containing the data from the CSV file.
@@ -35,25 +37,26 @@ def read_csv(filename):
     """
     # Values in here are hardcoded. This is usually not good practice, but to change the columns for everything else
     # you can just change the values here. - Warner
-    columns = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")
+    columns: tuple = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")
     if not os.path.exists(filename):
         raise FileNotFoundError("The file {} doesn't exist.".format(filename))
-    dtypes = {columns[0]: "uint16",  # ID should never be negative.
-              columns[2]: "int8",  # This limits point change values to -128 to 127. That shouldn't be an issue, but if
-              # you run into overflow problems you can change to int16 or in32.
-              columns[3]: "string",
-              columns[4]: "string",
-              columns[5]: "string",
-              columns[6]: "bool"}
+    dtypes: dict = {columns[0]: "uint16",  # ID should never be negative.
+                    columns[2]: "int8",
+                    # This limits point change values to -128 to 127. That shouldn't be an issue, but if
+                    # you run into overflow problems you can change to int16 or in32.
+                    columns[3]: "string",
+                    columns[4]: "string",
+                    columns[5]: "string",
+                    columns[6]: "bool"}
     # Another option to optimize these dtypes for lower ram usage would be to store Pledge and Brother as int ids and
     # be able to map ids to names using a dict if needed.
     # Memory usage 3.8 MB with optimizations and 4.9 MB without with a 100,000 row dataframe (5.5 MB csv file). This hardly
     # seems worth it for our smaller datasets.
-    df = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
+    df: pandas.DataFrame = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
     return df
 
 
-def append_row_to_df(df, new_row):
+def append_row_to_df(df: pandas.DataFrame, new_row: list) -> pandas.DataFrame:
     """
 
     Author: Warner
@@ -68,18 +71,19 @@ def append_row_to_df(df, new_row):
     :rtype: pandas.DataFrame
     """
     # Warner: According to a stake overflow post I read turning a dataframe into a list of rows, appending that list
-    # and then making a new dataframe is the most efficient way to append a row to a dataframe. Might be bs, but it
-    # it working fine so far
+    # and then making a new dataframe is the most efficient way to append a row to a dataframe. Might be bs, but
+    # it seems working fine so far
 
     # This creates a list of lists.  Each list in the list contains the values of the row
-    rows = df.values.tolist()
-    headers = df.columns.tolist()
+    rows: list = df.values.tolist()
+    headers: list = df.columns.tolist()
     if len(new_row) != len(headers):
         raise Exception("The new row must have the same number of columns as the headers.")
     rows.append(new_row)
     return pd.DataFrame(rows, columns=headers)
 
-def get_current_time():
+
+def get_current_time() -> np.datetime64:
     """
     Returns the current time in milliseconds as a ``numpy.datetime64`` object.
 
