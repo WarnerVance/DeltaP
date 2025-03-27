@@ -68,7 +68,8 @@ def append_row_to_df(df, new_row):
     :rtype: pandas.DataFrame
     """
     # Warner: According to a stake overflow post I read turning a dataframe into a list of rows, appending that list
-    # and then making a new dataframe is the most efficient way to append a row to a dataframe.
+    # and then making a new dataframe is the most efficient way to append a row to a dataframe. Might be bs, but it
+    # it working fine so far
 
     # This creates a list of lists.  Each list in the list contains the values of the row
     rows = df.values.tolist()
