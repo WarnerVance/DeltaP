@@ -2,3 +2,7 @@
 /example.csv
 /test.csv
 /large_dataset.csv
+.idea
+__pycache__
+MasterPoints.csv
+.DS_Store
