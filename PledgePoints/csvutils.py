@@ -2,8 +2,8 @@ import os
 import time
 
 import numpy as np
-import pandas
 import pandas as pd
+from pandas import DataFrame
 
 
 def create_csv(filename: str,
@@ -20,12 +20,12 @@ def create_csv(filename: str,
     """
     if os.path.exists(filename):
         raise FileExistsError("The file {} already exists.".format(filename))
-    df: pandas.DataFrame = pd.DataFrame(columns=columns)
+    df: pd.DataFrame = pd.DataFrame(columns=columns)
     df.to_csv(filename, index=False)
     return filename
 
 
-def read_csv(filename: str) -> pandas.DataFrame:
+def read_csv(filename: str) -> DataFrame:
     """
     Author: Warner
 
@@ -52,11 +52,11 @@ def read_csv(filename: str) -> pandas.DataFrame:
     # be able to map ids to names using a dict if needed.
     # Memory usage 3.8 MB with optimizations and 4.9 MB without with a 100,000 row dataframe (5.5 MB csv file). This hardly
     # seems worth it for our smaller datasets.
-    df: pandas.DataFrame = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
+    df: pd.DataFrame = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
     return df
 
 
-def append_row_to_df(df: pandas.DataFrame, new_row: list) -> pandas.DataFrame:
+def append_row_to_df(df: DataFrame, new_row: list) -> DataFrame:
     """
 
     Author: Warner
@@ -64,11 +64,11 @@ def append_row_to_df(df: pandas.DataFrame, new_row: list) -> pandas.DataFrame:
     Appends a new row to the given DataFrame. new_row should be a list of values that make up the vow, and should have
     the same number of columns as the dataframe.
     :param df: the pandas Dataframe that will be appended.
-    :type df: pandas.DataFrame
+    :type df: DataFrame
     :param new_row: a list of values that make up the new row.
     :type new_row: list
     :return: A pandas DataFrame containing the new row appended.
-    :rtype: pandas.DataFrame
+    :rtype: DataFrame
     """
     # Warner: According to a stake overflow post I read turning a dataframe into a list of rows, appending that list
     # and then making a new dataframe is the most efficient way to append a row to a dataframe. Might be bs, but

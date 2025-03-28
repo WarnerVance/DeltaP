@@ -89,7 +89,7 @@ async def test_check_info_role_success(mock_interaction):
 
 
 @pytest.mark.asyncio
-async def test_check_brother_role_failure(mock_interaction):
+async def test_check_info_role_failure(mock_interaction):
     # Setup
     mock_interaction.guild.roles = []
     mock_interaction.user.roles = []

@@ -1,7 +1,9 @@
 import pandas as pd
+from pandas import DataFrame
 
 
-def change_point_approval(df, point_id, new_approval=True, id_column_name="ID", approved_column_name="Approved"):
+def change_point_approval(df: DataFrame, point_id: int, new_approval: bool = True, id_column_name: str = "ID",
+                          approved_column_name: str = "Approved") -> DataFrame:
     """
     This function updates the approval status of a specific point in the provided dataframe
     based on the given point ID. The function ensures that the provided `new_approval`
@@ -38,7 +40,7 @@ def change_point_approval(df, point_id, new_approval=True, id_column_name="ID", 
         raise ValueError("Point ID not found in dataframe")
 
     # This finds the index values for the approval and ID columns from the given dataframe.
-    columns = df.columns.tolist()
+    columns: list = df.columns.tolist()
     approval_idx, id_idx = None, None
     for idx, column in enumerate(columns):
         if (approval_idx is not None) and (id_idx is not None):
@@ -50,18 +52,18 @@ def change_point_approval(df, point_id, new_approval=True, id_column_name="ID", 
             id_idx = idx
             continue
 
-    rows = df.values.tolist()
-    # I know it's crazy but this is actually really fast. Maybe some pandas genius can come up with a better way, but
+    rows: list = df.values.tolist()
+    # I know it's crazy but this is actually really fast. Maybe some pandas guru can come up with a better way, but
     # the benchmarking I've done makes it seem that this is the best way -Warner
     for row in rows:
         if row[id_idx] == point_id:
             row[approval_idx] = new_approval
             break
-    new_df = pd.DataFrame(rows, columns=columns)
+    new_df: DataFrame = pd.DataFrame(rows, columns=columns)
     return new_df
 
 
-def get_approved_points(df, approval_column_name="Approved", id_column_name="ID"):
+def get_approved_points(df, approval_column_name="Approved", id_column_name="ID") -> DataFrame:
     """
     Author: Warner
 
@@ -86,7 +88,8 @@ def get_approved_points(df, approval_column_name="Approved", id_column_name="ID"
     return df.loc[df[approval_column_name] == True].sort_values(by=id_column_name)
 
 
-def get_unapproved_points(df, approval_column_name="Approved", id_column_name="ID"):
+def get_unapproved_points(df: DataFrame, approval_column_name: str = "Approved",
+                          id_column_name: str = "ID") -> DataFrame:
     """
     Author: Warner
 
@@ -153,8 +156,9 @@ def get_unapproved_points(df, approval_column_name="Approved", id_column_name="I
 #     return df
 
 
-def change_approval_with_discrete_values(df, ids, new_approval=True, id_column_name="ID",
-                                         approved_column_name="Approved"):
+def change_approval_with_discrete_values(df: DataFrame, ids: list or tuple, new_approval: bool = True,
+                                         id_column_name: str = "ID",
+                                         approved_column_name: str = "Approved") -> DataFrame:
     """
     Author: Warner
 
@@ -201,16 +205,16 @@ def change_approval_with_discrete_values(df, ids, new_approval=True, id_column_n
         raise ValueError("ids must contain at least one value")
     if len(ids) > len(df):
         raise ValueError("ids must contain fewer values than the length of the DataFrame")
-    if not all(isinstance(id, int) for id in ids):
+    if not all(isinstance(point_id, int) for point_id in ids):
         raise TypeError("ids must contain only integers")
 
     # This iterates through the ids and makes the approval change for each one
     for i in ids:
-        df = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
+        df: DataFrame = change_point_approval(df, i, new_approval, id_column_name, approved_column_name)
     return df
 
 
-def delete_unapproved_points(df, approved_column_name="Approved"):
+def delete_unapproved_points(df: DataFrame, approved_column_name: str = "Approved") -> DataFrame:
     """
     Author: Warner
 
@@ -223,8 +227,8 @@ def delete_unapproved_points(df, approved_column_name="Approved"):
     :return: output dataframe without unapproved points
     :rtype: pandas.DataFrame
     """
-    disapproved_idx = df.loc[df[approved_column_name] == False].index.tolist()
+    disapproved_idx: list = df.loc[df[approved_column_name] == False].index.tolist()
     if len(disapproved_idx) == 0:
         return df
-    df = df.drop(disapproved_idx, axis=0)
+    df: DataFrame = df.drop(disapproved_idx, axis=0)
     return df

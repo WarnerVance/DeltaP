@@ -1,5 +1,5 @@
 import pandas as pd
-from pandas.core.interchange.dataframe_protocol import DataFrame
+from pandas import DataFrame
 
 from PledgePoints.csvutils import append_row_to_df, get_current_time
 
@@ -98,7 +98,7 @@ def get_point_history(df: DataFrame, pledge: str, pledge_column_name: str = "Ple
     return df
 
 
-def change_pledge_points(df: DataFrame, pledge: str, brother: str, comment: str, points: int) -> list:
+def change_pledge_points(df: DataFrame, pledge: str, brother: str, comment: str, points: int) -> DataFrame:
     """
 
     Author: Warner
