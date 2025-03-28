@@ -409,7 +409,7 @@ class TestChangePreviousPointEntry:
         """Test changing all fields of a point entry."""
         result = change_previous_point_entry(
             sample_df,
-            ID=1,
+            point_id=1,
             new_pledge="NewPledge",
             new_points=75,
             new_brother="NewBrother",
@@ -426,7 +426,7 @@ class TestChangePreviousPointEntry:
 
     def test_change_previous_point_entry_single_field(self, sample_df):
         """Test changing only one field while leaving others unchanged."""
-        result = change_previous_point_entry(sample_df, ID=1, new_comment="Only Comment Changed")
+        result = change_previous_point_entry(sample_df, point_id=1, new_comment="Only Comment Changed")
         modified_row = result.loc[result["ID"] == 1]
         original_row = sample_df.loc[sample_df["ID"] == 1]
 
@@ -442,14 +442,14 @@ class TestChangePreviousPointEntry:
     def test_change_previous_point_entry_invalid_id(self, sample_df):
         """Test that attempting to change a non-existent ID raises an error."""
         with pytest.raises(IndexError):
-            change_previous_point_entry(sample_df, ID=999, new_comment="Should Fail")
+            change_previous_point_entry(sample_df, point_id=999, new_comment="Should Fail")
 
     def test_change_previous_point_entry_custom_id_column(self, sample_df):
         """Test that custom ID column name works correctly."""
         df = sample_df.rename(columns={"ID": "CustomID"})
         result = change_previous_point_entry(
             df,
-            ID=1,
+            point_id=1,
             new_pledge="NewPledge",
             id_column_name="CustomID"
         )
@@ -459,7 +459,7 @@ class TestChangePreviousPointEntry:
         """Test that the function preserves all data when modifying an entry."""
         # First, sort by a different column to change order
         reordered_df = sample_df.sort_values(by="PointChange", ascending=False)
-        result = change_previous_point_entry(reordered_df, ID=1, new_comment="New Comment")
+        result = change_previous_point_entry(reordered_df, point_id=1, new_comment="New Comment")
 
         # Check that all original rows except the modified one are present and unchanged
         for idx, row in reordered_df.iterrows():

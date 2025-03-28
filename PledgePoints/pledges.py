@@ -1,9 +1,11 @@
 import pandas as pd
+from pandas.core.interchange.dataframe_protocol import DataFrame
 
 from PledgePoints.csvutils import append_row_to_df, get_current_time
 
 
-def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_column_name="Pledge"):
+def get_one_pledge_points(df: DataFrame, pledge: str,
+                          point_column_name: str = "PointChange", pledge_column_name: str = "Pledge") -> int:
     """
     Author: Warner
     Calculates the total number of points for a specific pledge by summing the PointChange
@@ -25,7 +27,7 @@ def get_one_pledge_points(df, pledge, point_column_name="PointChange", pledge_co
     return int(df[point_column_name].loc[df[pledge_column_name] == pledge].sum())
 
 
-def get_pledge_names(df, pledge_column_name="Pledge"):
+def get_pledge_names(df: DataFrame, pledge_column_name: str = "Pledge") -> list:
     """
     Author: Warner
     Returns a list of the unique pledge names from the Dataframe
@@ -36,13 +38,13 @@ def get_pledge_names(df, pledge_column_name="Pledge"):
     :return: A list of the pledge names without duplicates in alphabetical order.
     :rtype: list
     """
-    pledges = df[pledge_column_name].to_list()
+    pledges: list = df[pledge_column_name].to_list()
     pledges = list(set(pledges))
     pledges = sorted(pledges)
     return pledges
 
 
-def get_point_totals(df, pledge_column_name="Pledge"):
+def get_point_totals(df: DataFrame, pledge_column_name: str = "Pledge") -> list:
     """
     Author: Warner
     Calculates cumulative point totals for unique pledges in the DataFrame.
@@ -61,16 +63,17 @@ def get_point_totals(df, pledge_column_name="Pledge"):
         - A list of the point totals for each unique pledge.
     :rtype: list
     """
-    pledges = get_pledge_names(df, pledge_column_name)
-    totals = []
+    pledges: list = get_pledge_names(df, pledge_column_name)
+    totals: list = []
     for pledge in pledges:
         totals.append(get_one_pledge_points(df, pledge))
-    del df
     return [pledges, totals]
 
 
-def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name="PointChange", time_column_name="Time",
-                      brother_column_name="Brother", comment_column_name="Comment", approved_column_name="Approved"):
+def get_point_history(df: DataFrame, pledge: str, pledge_column_name: str = "Pledge",
+                      point_column_name: str = "PointChange",
+                      time_column_name: str = "Time", brother_column_name: str = "Brother",
+                      comment_column_name: str = "Comment", approved_column_name: str = "Approved") -> list:
     """
     Author: Warner
     Filters and reorganizes a DataFrame to provide the point history of a specific pledge. The function
@@ -84,6 +87,8 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
     :param time_column_name: The name of the column containing timestamps of point changes.
     :param brother_column_name: The name of the column containing brother information.
     :param comment_column_name: The name of the column containing comments about point changes.
+    :param approved_column_name: The name of the column containing approved points.
+    :type df: pandas.DataFrame
     :return: A DataFrame filtered, sorted, and reorganized to show the point history of the specified pledge.
     """
     df = df.loc[df[pledge_column_name] == pledge]
@@ -93,7 +98,7 @@ def get_point_history(df, pledge, pledge_column_name="Pledge", point_column_name
     return df
 
 
-def change_pledge_points(df, pledge, brother, comment, points):
+def change_pledge_points(df: DataFrame, pledge: str, brother: str, comment: str, points: int) -> list:
     """
 
     Author: Warner
@@ -124,12 +129,12 @@ def change_pledge_points(df, pledge, brother, comment, points):
 
     if not df.empty:
         # This finds the highest value for ID in the given dataframe
-        previous_id = int(df["ID"].sort_values(ascending=False).reset_index(drop=True)[0])
+        previous_id: int = int(df["ID"].sort_values(ascending=False).reset_index(drop=True)[0])
     else:
         # If there is no data in the dataframe, we default to a previous index of -1 so that our first id will be 0
         previous_id = -1
 
-    new_id = previous_id + 1
+    new_id: int = previous_id + 1
 
     # This is a bit of failsafe code that should never run if the above if statement works correctly.
     # It checks if our new_id has previously appeared in the ID column which should never happen
@@ -137,17 +142,18 @@ def change_pledge_points(df, pledge, brother, comment, points):
         raise ValueError("The new ID has already appeared in the ID column.")
 
     if type(points) != int:
-        points = int(points)
+        points: int = int(points)
     if points not in range(-128, 128):
         raise ValueError("The points value has to be between -128,127")
 
-    new_row = [new_id,get_current_time(), points, pledge, brother, comment, False]
-    new_df = append_row_to_df(df, new_row)
+    new_row: list = [new_id, get_current_time(), points, pledge, brother, comment, False]
+    new_df: DataFrame = append_row_to_df(df, new_row)
     return new_df
 
 
-def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_brother=None, new_comment=None,
-                                id_column_name="ID"):
+def change_previous_point_entry(df: DataFrame, point_id: str, new_pledge: str = None, new_points: int = None,
+                                new_brother: str = None, new_comment: str = None,
+                                id_column_name: str = "ID") -> DataFrame:
     """
     Author: Warner
 
@@ -157,7 +163,7 @@ def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_br
     ID and time cannot be changed with this function.
 
     :param df: points dataframe
-    :param ID: the id of the point you want to change
+    :param point_id: the id of the point you want to change
     :param new_pledge: The new value for pledge name
     :param new_points: The new value for the point change
     :param new_brother: The new value for the brother change
@@ -166,12 +172,12 @@ def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_br
     :return: DataFrame with the modified row
     """
     # Create a copy of the DataFrame to avoid modifying the original
-    new_df = df.copy()
+    new_df: DataFrame = df.copy()
 
     # Find the row to modify
-    row_mask = new_df[id_column_name] == ID
+    row_mask = new_df[id_column_name] == point_id
     if not any(row_mask):
-        raise IndexError(f"No row found with ID {ID}")
+        raise IndexError(f"No row found with ID {point_id}")
 
     # Update only the specified fields
     if new_pledge is not None:
@@ -186,7 +192,7 @@ def change_previous_point_entry(df, ID, new_pledge=None, new_points=None, new_br
     return new_df
 
 
-def reset_id(df):
+def reset_id(df: DataFrame) -> DataFrame:
     """
     Author: Warner
 
@@ -200,9 +206,9 @@ def reset_id(df):
     :return: A new dataframe with reset ids.
     :rtype: pandas.DataFrame
     """
-    rows = df.values.tolist()
+    rows: list = df.values.tolist()
     rows = sorted(rows, key=lambda x: x[1])
-    point_id = 0
+    point_id: int = 0
     for row in rows:
         row[0] = point_id
         point_id += 1
