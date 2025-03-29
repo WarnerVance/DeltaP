@@ -12,20 +12,20 @@ def setup(bot: commands.Bot):
     @bot.tree.command(name="ping", description="Check if the bot is responsive and get its latency")
     async def ping(interaction: discord.Interaction):
         # Send initial response and get the timestamp
-        start_time = datetime.now(pytz.UTC)
+        start_time: datetime.time = datetime.now(pytz.UTC)
         await interaction.response.send_message("Calculating ping...")
 
         # Get WebSocket latency. This is a single request and the response.
         websocket_latency = round(bot.latency * 1000)  # Convert to milliseconds
 
         # Calculate uptime
-        uptime = datetime.now(pytz.UTC) - bot.start_time
+        uptime = datetime.now(pytz.UTC) - start_time
         hours = uptime.total_seconds() // 3600
         minutes = (uptime.total_seconds() % 3600) // 60
         seconds = uptime.total_seconds() % 60
 
         # Create embed for better presentation
-        embed = discord.Embed(
+        embed: discord.Embed = discord.Embed(
             title="🏓 Pong!",
             color=discord.Color.green()
         )
