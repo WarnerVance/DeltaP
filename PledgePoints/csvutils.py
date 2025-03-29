@@ -56,6 +56,20 @@ def read_csv(filename: str) -> DataFrame:
     return df
 
 
+def write_csv(df: DataFrame, filename: str = "MasterPoints.csv") -> str:
+    """
+    Author: Warner
+    Writes the points CSV file and returns the name of the new CSV file.
+    :param df: The pandas DataFrame containing the data from the CSV file.
+    :type df: pandas.DataFrame
+    :param filename: The name of the file to write.
+    :type filename: str
+    :return: The name of the new CSV file.
+    :rtype: str
+    """
+    df.to_csv(filename, index=False)
+    return filename
+
 def append_row_to_df(df: DataFrame, new_row: list) -> DataFrame:
     """
 
