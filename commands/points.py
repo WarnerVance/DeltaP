@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from PledgePoints.approval import get_unapproved_points, change_point_approval, change_approval_with_discrete_values, \
     delete_unapproved_points
-from PledgePoints.csvutils import read_csv, write_csv
+from PledgePoints.csvutils import read_parquet, write_parquet
 from PledgePoints.pledges import change_pledge_points
 from role.role_checking import check_brother_role, check_eboard_role, check_info_systems_role
 
@@ -42,9 +42,9 @@ def setup(bot: commands.Bot):
             return
         pledge = pledge.title()
         try:
-            df = read_csv(master_point_csv_name)
+            df = read_parquet(master_point_csv_name)
             df = change_pledge_points(df, pledge=pledge, brother=brother, comment=comment, points=points)
-            write_csv(df, master_point_csv_name)
+            write_parquet(df, master_point_csv_name)
             if points >= 0:
                 points_str = f"+{points}"
             else:
@@ -69,7 +69,7 @@ def setup(bot: commands.Bot):
         if await check_brother_role(interaction) is False:
             await interaction.response.send_message("Naughty Pledge trying to use the points bot")
             return
-        df = read_csv(master_point_csv_name)
+        df = read_parquet(master_point_csv_name)
         unapproved_points_df = get_unapproved_points(df)
         if len(unapproved_points_df) == 0:
             await interaction.response.send_message("No pending points to list.")
@@ -104,7 +104,7 @@ def setup(bot: commands.Bot):
             return
         # Reads in the points csv file
         try:
-            df = read_csv(master_point_csv_name)
+            df = read_parquet(master_point_csv_name)
         except Exception as error:
             await interaction.response.send_message(f"There was an error: {str(error)}")
             return
@@ -116,7 +116,7 @@ def setup(bot: commands.Bot):
                     await interaction.response.send_message("Error: This ID is not in the unapproved list")
                     return
                 df = change_point_approval(df, point_id, new_approval=True)
-                write_csv(df, master_point_csv_name)
+                write_parquet(df, master_point_csv_name)
                 await interaction.response.send_message(f"Point {point_id} approved")
                 return True
             except Exception as error:
@@ -128,7 +128,7 @@ def setup(bot: commands.Bot):
         try:
             # Changes the points with the given ids
             df = change_approval_with_discrete_values(df, ids, new_approval=True)
-            write_csv(df, master_point_csv_name)
+            write_parquet(df, master_point_csv_name)
             await interaction.response.send_message(f"Points {point_id} approved")
             return True
         except Exception as error:
@@ -151,7 +151,7 @@ def setup(bot: commands.Bot):
             return
 
         try:
-            df = read_csv(master_point_csv_name)
+            df = read_parquet(master_point_csv_name)
             original_length = len(df)
             df2 = delete_unapproved_points(df)
 

@@ -6,11 +6,11 @@ import pandas as pd
 from pandas import DataFrame
 
 
-def create_csv(filename: str,
+def create_parquet(filename: str,
                columns: tuple = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")) -> str:
     """
     Author: Warner
-    This will create a csv file with the points columns in the correct order.
+    This will create a parquet file with the points columns in the correct order.
     :param filename: The name/path of the file to create.
     :type filename: str
     :param columns: The names of the columns to include in the file.
@@ -20,19 +20,19 @@ def create_csv(filename: str,
     """
     if os.path.exists(filename):
         raise FileExistsError("The file {} already exists.".format(filename))
-    df: pd.DataFrame = pd.DataFrame(columns=columns)
-    df.to_csv(filename, index=False)
+    df: DataFrame = pd.DataFrame(columns=columns)
+    df.to_parquet(filename, index=False)
     return filename
 
 
-def read_csv(filename: str) -> DataFrame:
+def read_parquet(filename: str) -> DataFrame:
     """
     Author: Warner
 
-    Reads the points CSV file and returns a pandas DataFrame.
+    Reads the points parquet file and returns a pandas DataFrame.
     :param filename: The name of the file to read.
     :type filename: str
-    :return: A pandas DataFrame containing the data from the CSV file.
+    :return: A pandas DataFrame containing the data from the parquet file.
     :type: pandas.DataFrame
     """
     # Values in here are hardcoded. This is usually not good practice, but to change the columns for everything else
@@ -40,34 +40,22 @@ def read_csv(filename: str) -> DataFrame:
     columns: tuple = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")
     if not os.path.exists(filename):
         raise FileNotFoundError("The file {} doesn't exist.".format(filename))
-    dtypes: dict = {columns[0]: "uint16",  # ID should never be negative.
-                    columns[2]: "int8",
-                    # This limits point change values to -128 to 127. That shouldn't be an issue, but if
-                    # you run into overflow problems you can change to int16 or in32.
-                    columns[3]: "string",
-                    columns[4]: "string",
-                    columns[5]: "string",
-                    columns[6]: "bool"}
-    # Another option to optimize these dtypes for lower ram usage would be to store Pledge and Brother as int ids and
-    # be able to map ids to names using a dict if needed.
-    # Memory usage 3.8 MB with optimizations and 4.9 MB without with a 100,000 row dataframe (5.5 MB csv file). This hardly
-    # seems worth it for our smaller datasets.
-    df: pd.DataFrame = pd.read_csv(filename, dtype=dtypes, parse_dates=[columns[1]])
+    df: pd.DataFrame = pd.read_parquet(filename)
     return df
 
 
-def write_csv(df: DataFrame, filename: str = "MasterPoints.csv") -> str:
+def write_parquet(df: DataFrame, filename: str = "MasterPoints.parquet") -> str:
     """
     Author: Warner
-    Writes the points CSV file and returns the name of the new CSV file.
-    :param df: The pandas DataFrame containing the data from the CSV file.
+    Writes the points parquet file and returns the name of the new parquet file.
+    :param df: The pandas DataFrame containing the data from the parquet file.
     :type df: pandas.DataFrame
     :param filename: The name of the file to write.
     :type filename: str
-    :return: The name of the new CSV file.
+    :return: The name of the new parquet file.
     :rtype: str
     """
-    df.to_csv(filename, index=False)
+    df.to_parquet(filename, index=False)
     return filename
 
 def append_row_to_df(df: DataFrame, new_row: list) -> DataFrame:
