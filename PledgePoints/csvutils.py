@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from numpy import ndarray
 from pandas import DataFrame
 
 
@@ -102,15 +103,15 @@ def get_current_time() -> np.datetime64:
 def delete_data(filename: str = "MasterPoints.parquet") -> bool:
     """
     Author: Warner
-    Deletes the data from the parquet file.
+    Deletes alls rows from the parquet file. Columns and dtypes should be preserved.
     :param filename: The name of the file to delete.
     :type filename: str
     :return: A boolean indicating if the file was successfully deleted.
     """
     df: DataFrame = read_parquet(filename)
     length: int = len(df)
-    indices = np.arange(length)
-    indices = list(indices)
+    indices: ndarray = np.arange(length)
+    indices: list = list(indices)
     df = df.drop(indices)
     write_parquet(df, filename)
     return True
