@@ -7,7 +7,7 @@ from pandas import DataFrame
 
 
 def create_parquet(filename: str,
-               columns: tuple = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")) -> str:
+                   columns: tuple = ("ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved")) -> str:
     """
     Author: Warner
     This will create a parquet file with the points columns in the correct order.
@@ -58,6 +58,7 @@ def write_parquet(df: DataFrame, filename: str = "MasterPoints.parquet") -> str:
     df.to_parquet(filename, index=False)
     return filename
 
+
 def append_row_to_df(df: DataFrame, new_row: list) -> DataFrame:
     """
 
@@ -96,3 +97,20 @@ def get_current_time() -> np.datetime64:
     :return: Current time as a ``numpy.datetime64`` instance in milliseconds.
     """
     return np.datetime64(int(round(time.time() * 1000)), 'ms')
+
+
+def delete_data(filename: str = "MasterPoints.parquet") -> bool:
+    """
+    Author: Warner
+    Deletes the data from the parquet file.
+    :param filename: The name of the file to delete.
+    :type filename: str
+    :return: A boolean indicating if the file was successfully deleted.
+    """
+    df: DataFrame = read_parquet(filename)
+    length: int = len(df)
+    indices = np.arange(length)
+    indices = list(indices)
+    df = df.drop(indices)
+    write_parquet(df, filename)
+    return True
