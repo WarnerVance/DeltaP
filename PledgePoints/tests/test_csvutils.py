@@ -10,7 +10,7 @@ from PledgePoints.csvutils import create_parquet, read_parquet, get_current_time
 class TestReadCsv:
     def test_read_csv_success(self, tmpdir):
         """Test that a valid CSV file is read successfully."""
-        filename = os.path.join(tmpdir, "test.csv")
+        filename = os.path.join(tmpdir, "test.parquet")
         columns = ["ID", "Time", "PointChange", "Pledge", "Brother", "Comment", "Approved"]
         df = pd.DataFrame([[1, get_current_time(), 10, "Pledge1", "John", "Test", True]], columns=columns)
         df.to_parquet(filename, index=False)
@@ -28,7 +28,7 @@ class TestReadCsv:
 @pytest.fixture
 def temp_file(tmpdir):
     """Fixture to provide a temporary file path."""
-    return os.path.join(tmpdir, "test.csv")
+    return os.path.join(tmpdir, "test.parquet")
 
 
 class TestCreateCsv:

@@ -1,6 +1,7 @@
 # Imports
 import asyncio  # Asynchronous I/O support
 import os  # File and path operations
+import sqlite3
 import ssl  # Secure connection support
 from datetime import datetime  # Date and time handling
 
@@ -30,6 +31,7 @@ async def get_session() -> aiohttp.ClientSession:
     return aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=ssl_context))
 
 
+
 # Type ignore for internal discord.py attributes
 bot.http._HTTPClient__session = None  # type: ignore
 bot.http.get_session = get_session  # type: ignore
@@ -39,9 +41,12 @@ setattr(bot, 'start_time', None)
 
 @bot.event
 async def on_ready():
+    global DB
+    DB = sqlite3.connect(master_point_file_name)
+    print("Connected to database")
     print(f'Bot is ready! Logged in as {bot.user.name} (ID: {bot.user.id})')
     print('------')
-    
+
     if bot.start_time is None:  # Only set on first connection
         bot.start_time = datetime.now(pytz.UTC)
         print(f'Start time set to: {bot.start_time}')
@@ -50,7 +55,7 @@ async def on_ready():
         # Set up command modules
         setup_admin(bot)
         setup_points(bot)
-        
+
         # Synchronize slash commands with Discord's API
         synced = await bot.tree.sync()
         print(f'Synced {len(synced)} command(s)')
@@ -87,10 +92,7 @@ async def main():
         print('Successfully connected to Discord')
     except Exception as e:
         print(f'Error during startup: {str(e)}')
-    finally:
-        if not bot.is_closed():
-            await bot.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
-
