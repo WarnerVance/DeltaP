@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from commands.admin import setup as setup_admin
 from commands.points import setup as setup_points
 
-# Warner: ssl_context until the on_ready function was ai generated because I couldn't be bothered
+# Warner: ssl_context until the on_ready function was AI generated because I couldn't be bothered
 # Initialize SSL context for secure connections
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
@@ -42,7 +42,6 @@ async def on_ready():
     global conn
     print(f'Bot is ready! Logged in as {bot.user.name} (ID: {bot.user.id})')
     print('------')
-
     if bot.start_time is None:  # Only set on first connection
         bot.start_time = datetime.now(pytz.UTC)
         print(f'Start time set to: {bot.start_time}')

@@ -50,10 +50,9 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
     Returns:
         list[tuple[datetime, int, str, str, str]]: List of tuples containing (time, point_change, pledge, brother, comment)
     """
+    SQL_INT_MIN = -9223372036854775808
+    SQL_INT_MAX = 9223372036854775807
     processed_messages = []
-    SQL_INT_MIN = -2147483648
-    SQL_INT_MAX = 2147483647
-
     for author, timestamp, content, message in messages:
         # Skip messages that don't match the expected format
         if not content.strip():
@@ -85,7 +84,7 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
             await message.add_reaction('👎')
             continue
 
-        pledge = parts[0]
+        pledge = parts[0].title()
         comment = parts[1].strip()
 
         # Create the tuple in the format (time, point_change, pledge, brother, comment)
