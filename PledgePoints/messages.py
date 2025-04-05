@@ -1,6 +1,8 @@
+import asyncio
 import re
 import sqlite3
 from datetime import datetime, timedelta
+from typing import List, Tuple, Optional
 
 import discord
 import pytz
@@ -38,59 +40,83 @@ async def fetch_messages_from_days_ago(bot: discord.Client, channel_id: int, day
     return messages
 
 
+async def process_message_content(content: str) -> Optional[Tuple[int, str, str]]:
+    """
+    Process a single message's content to extract point change, pledge name, and comment.
+    Returns None if the message is invalid.
+    """
+    sql_int_min = -9223372036854775808
+    sql_int_max = 9223372036854775807
+
+    if not content.strip():
+        return None
+
+    # Extract point change using regex
+    point_match = re.match(r'^([+-]\d+)', content)
+    if not point_match:
+        return None
+
+    try:
+        point_change = int(point_match.group(1))
+        # Check if point change fits within SQL integer limits
+        if point_change < sql_int_min or point_change > sql_int_max:
+            return None
+    except ValueError:
+        return None
+
+    # Remove the point change from the content
+    remaining_content = content[len(point_match.group(1)):].strip()
+
+    # Split the remaining content into pledge name and comment
+    parts = remaining_content.split(' ', 1)
+    if len(parts) < 2:
+        return None
+
+    pledge = parts[0].title()
+    comment = parts[1].strip()
+
+    return point_change, pledge, comment
+
+
+async def add_reactions_with_rate_limit(messages: List[Tuple[discord.Message, bool]], rate_limit: float = 0.2):
+    """
+    Add reactions to messages with rate limiting.
+    messages: List of (message, success) tuples where success is True for 👍 and False for 👎
+    rate_limit: Minimum time between reactions in seconds
+    """
+    for message, success in messages:
+        try:
+            emoji = '👍' if success else '👎'
+            await message.add_reaction(emoji)
+            await asyncio.sleep(rate_limit)  # Rate limit the reactions
+        except Exception:
+            # Skip if we can't add the reaction
+            continue
+
+
 async def process_messages(messages: list[tuple[discord.User, datetime, str, discord.Message]]) -> list[
     tuple[datetime, int, str, str, str]]:
     """
     Process messages to extract point changes, pledge names, and comments.
-    Adds thumbs up/down reactions to indicate processing success.
-    
-    Args:
-        messages (list[tuple[discord.User, datetime, str, discord.Message]]): List of messages to process
-        
-    Returns:
-        list[tuple[datetime, int, str, str, str]]: List of tuples containing (time, point_change, pledge, brother, comment)
+    Returns processed messages and handles reactions separately with rate limiting.
     """
-    SQL_INT_MIN = -9223372036854775808
-    SQL_INT_MAX = 9223372036854775807
     processed_messages = []
+    reaction_queue = []
+
     for author, timestamp, content, message in messages:
-        # Skip messages that don't match the expected format
-        if not content.strip():
-            await message.add_reaction('👎')
+        result = await process_message_content(content)
+
+        if result is None:
+            reaction_queue.append((message, False))
             continue
 
-        # Extract point change using regex
-        point_match = re.match(r'^([+-]\d+)', content)
-        if not point_match:
-            await message.add_reaction('👎')
-            continue
-
-        try:
-            point_change = int(point_match.group(1))
-            # Check if point change fits within SQL integer limits
-            if point_change < SQL_INT_MIN or point_change > SQL_INT_MAX:
-                await message.add_reaction('👎')
-                continue
-        except ValueError:
-            await message.add_reaction('👎')
-            continue
-
-        # Remove the point change from the content
-        remaining_content = content[len(point_match.group(1)):].strip()
-
-        # Split the remaining content into pledge name and comment
-        parts = remaining_content.split(' ', 1)
-        if len(parts) < 2:
-            await message.add_reaction('👎')
-            continue
-
-        pledge = parts[0].title()
-        comment = parts[1].strip()
-
-        # Create the tuple in the format (time, point_change, pledge, brother, comment)
+        point_change, pledge, comment = result
         processed_messages.append((timestamp, point_change, pledge, author.name, comment))
-        await message.add_reaction('👍')
+        reaction_queue.append((message, True))
 
+    # Handle reactions separately with rate limiting
+    asyncio.create_task(add_reactions_with_rate_limit(reaction_queue))
+    
     return processed_messages
 
 
