@@ -1,7 +1,6 @@
 # Imports
 import asyncio  # Asynchronous I/O support
 import os  # File and path operations
-import sqlite3
 import ssl  # Secure connection support
 from datetime import datetime  # Date and time handling
 
@@ -11,7 +10,6 @@ import pytz  # type: ignore  # Timezone support
 from discord.ext import commands  # Discord bot commands and scheduled tasks
 from dotenv import load_dotenv
 
-from PledgePoints.csvutils import create_parquet
 from commands.admin import setup as setup_admin
 from commands.points import setup as setup_points
 
@@ -41,9 +39,7 @@ setattr(bot, 'start_time', None)
 
 @bot.event
 async def on_ready():
-    global DB
-    DB = sqlite3.connect(master_point_file_name)
-    print("Connected to database")
+    global conn
     print(f'Bot is ready! Logged in as {bot.user.name} (ID: {bot.user.id})')
     print('------')
 
@@ -67,19 +63,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 if not TOKEN:
     raise ValueError("DISCORD_TOKEN not found in .env file")
 
-master_point_file_name = os.getenv('CSV_NAME')
-if not master_point_file_name:
-    raise ValueError("CSV_NAME not found in .env file")
 
-# Initialize required CSV files if they don't exist
-try:
-    if not os.path.exists(master_point_file_name):
-        # Warner: The Default values for columns in the create_csv function are fine here.
-        create_parquet(master_point_file_name)
-
-except Exception as e:
-    print(f"Error creating Parquet Files files: {str(e)}")
-    del e
 
 async def main():
     print('Starting bot...')
