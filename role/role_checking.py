@@ -55,7 +55,7 @@ async def check_info_systems_role(interaction: discord.Interaction) -> bool:
     :return: True if the user has the "Info Systems" role and the role exists within the guild; False otherwise.
     :rtype: bool
     """
-    infosys_role: discord.role = discord.utils.get(interaction.guild.roles, name="Info Systems")
+    infosys_role: discord.role = discord.utils.get(interaction.guild.roles, id=1032306248235888762)
     if infosys_role is None or infosys_role not in interaction.user.roles:
         return False
     return True
