@@ -75,6 +75,9 @@ async def process_message_content(content: str) -> Optional[Tuple[int, str, str]
     pledge = parts[0].title()
     comment = parts[1].strip()
 
+    if pledge == "To":
+        pledge = comment.split(' ', 1)[0].title()
+
     return point_change, pledge, comment
 
 
