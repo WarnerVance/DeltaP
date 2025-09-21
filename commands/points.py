@@ -1,12 +1,9 @@
 import os
-import sqlite3
 
-import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-import PledgePoints
-from PledgePoints.messages import get_old_points, fetch_messages_from_days_ago, process_messages, eliminate_duplicates, add_new_points
+from PledgePoints.messages import *
 
 load_dotenv()
 master_point_csv_name = os.getenv('CSV_NAME')
