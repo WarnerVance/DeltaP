@@ -122,3 +122,28 @@ def setup(bot: commands.Bot):
             await interaction.followup.send(f"An error occurred while fetching rankings: {str(e)}")
             raise
 
+    @bot.tree.command(name="plot_rankings", description="Plot rankings of all pledges by total points.")
+    async def plot_rankings_command(interaction: discord.Interaction):
+        try:
+            await interaction.response.send_message("Generating pledge rankings plot...")
+
+            db_connection = sqlite3.connect(master_point_file_name)
+            points = get_pledge_points(db_connection)
+            db_connection.close()
+            rankings_df = rank_pledges(points)
+
+            if rankings_df.empty:
+                await interaction.followup.send("No pledge data found in the database.")
+                return
+
+            plot_file = plot_rankings(rankings_df)
+            await interaction.followup.send(file=discord.File(plot_file))
+
+            # Clean up the generated plot file
+            if os.path.exists(plot_file):
+                os.remove(plot_file)
+
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred while generating the plot: {str(e)}")
+            raise
+

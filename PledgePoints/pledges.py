@@ -1,6 +1,7 @@
 import pandas as pd
+from matplotlib import pyplot as plt
 from pandas import DataFrame
-
+import seaborn as sns
 
 def change_pledge_points(db_connection, data_tuple) -> bool:
     if len(data_tuple) != 5:
@@ -28,3 +29,14 @@ def get_pledge_points(db_connection) -> DataFrame:
 
 def rank_pledges(df: DataFrame) -> pd.Series:
     return df.groupby('Pledge')['PointChange'].sum().sort_values(ascending=False)
+
+def plot_rankings(rankings: pd.Series) -> str:
+    sns.set_theme(style="darkgrid")
+    sns.barplot(x=rankings.index, y=rankings.values)
+    plt.title("Pledge Rankings by Total Points")
+    plt.xlabel("Pledge")
+    plt.ylabel("Total Points")
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.tight_layout()
+    plt.savefig("rankings.png")
+    return "rankings.png"
