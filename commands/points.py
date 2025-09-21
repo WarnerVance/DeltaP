@@ -4,6 +4,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from PledgePoints.messages import *
+from PledgePoints.pledges import *
 
 load_dotenv()
 master_point_csv_name = os.getenv('CSV_NAME')
@@ -79,35 +80,17 @@ def setup(bot: commands.Bot):
             raise
 
 
-    def get_pledge_rankings(db_connection: sqlite3.Connection) -> list[tuple[str, int]]:
-        """
-        Get a ranking of all pledges by their total points.
-        
-        Args:
-            db_connection: SQLite database connection
-            
-        Returns:
-            List of tuples (pledge_name, total_points) sorted by total_points descending
-        """
-        cursor = db_connection.cursor()
-        cursor.execute("""
-            SELECT Pledge, SUM(PointChange) as TotalPoints
-            FROM Points
-            GROUP BY Pledge
-            ORDER BY TotalPoints DESC
-        """)
-        rankings = cursor.fetchall()
-        return rankings
-
     @bot.tree.command(name="pledge_rankings", description="Show rankings of all pledges by total points.")
     async def pledge_rankings(interaction: discord.Interaction):
         try:
             await interaction.response.send_message("Fetching pledge rankings...")
             
             db_connection = sqlite3.connect(master_point_file_name)
-            rankings = get_pledge_rankings(db_connection)
+            points = get_pledge_points(db_connection)
             db_connection.close()
-            
+            rankings_df = rank_pledges(points)
+            rankings = [(pledge, int(total_points)) for pledge, total_points in rankings_df.items()]
+
             if not rankings:
                 await interaction.followup.send("No pledge data found in the database.")
                 return
