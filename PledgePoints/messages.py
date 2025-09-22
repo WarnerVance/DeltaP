@@ -79,6 +79,8 @@ async def process_message_content(content: str, valid_pledges: list) -> Optional
         pledge = comment.split(' ', 1)[0].title()
     if pledge == "Matt":
         pledge = "Matthew"
+    if pledge == "Ozempic":
+        pledge = "Eli"
     if pledge not in valid_pledges:
         return None
 
