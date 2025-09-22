@@ -40,7 +40,7 @@ async def fetch_messages_from_days_ago(bot: discord.Client, channel_id: int, day
     return messages
 
 
-async def process_message_content(content: str) -> Optional[Tuple[int, str, str]]:
+async def process_message_content(content: str, valid_pledges: list) -> Optional[Tuple[int, str, str]]:
     """
     Process a single message's content to extract point change, pledge name, and comment.
     Returns None if the message is invalid.
@@ -77,6 +77,10 @@ async def process_message_content(content: str) -> Optional[Tuple[int, str, str]
 
     if pledge == "To":
         pledge = comment.split(' ', 1)[0].title()
+    if pledge == "Matt":
+        pledge = "Matthew"
+    if pledge not in valid_pledges:
+        return None
 
     return point_change, pledge, comment
 
@@ -105,9 +109,27 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
     """
     processed_messages = []
     reaction_queue = []
-
+    valid_pledges = [
+        "Eli",
+        "Evan",
+        "Felix",
+        "George",
+        "Henrik",
+        "James",
+        "Kashyap",
+        "Krishiv",
+        "Logan",
+        "Matthew",
+        "Milo",
+        "Nick",
+        "Tony",
+        "Will",
+        "Zach",
+        "Blake",
+        "Devin"
+    ]
     for author, timestamp, content, message in messages:
-        result = await process_message_content(content)
+        result = await process_message_content(content, valid_pledges)
 
         if result is None:
             reaction_queue.append((message, False))
