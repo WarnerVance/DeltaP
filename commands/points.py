@@ -2,7 +2,6 @@ import os
 
 from discord.ext import commands
 from dotenv import load_dotenv
-
 from PledgePoints.messages import *
 from PledgePoints.pledges import *
 
@@ -16,7 +15,6 @@ def initialize_database(db_file_name: str):
     """Initialize the database with the required table structure."""
     conn = sqlite3.connect(db_file_name)
     cursor = conn.cursor()
-    
     # Create the Points table if it doesn't exist
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Points (
@@ -27,7 +25,6 @@ def initialize_database(db_file_name: str):
             Comment TEXT
         )
     """)
-    
     conn.commit()
     conn.close()
     print(f"Database initialized: {db_file_name}")
@@ -48,7 +45,6 @@ def setup(bot: commands.Bot):
         channel_id = int(channel_id_str)
     except ValueError:
         raise ValueError(f"CHANNEL_ID must be a valid integer, got {channel_id_str}")
-    
     # Initialize the database
     initialize_database(master_point_file_name)
 
@@ -84,7 +80,6 @@ def setup(bot: commands.Bot):
     async def pledge_rankings(interaction: discord.Interaction):
         try:
             await interaction.response.send_message("Fetching pledge rankings...")
-            
             db_connection = sqlite3.connect(master_point_file_name)
             points = get_pledge_points(db_connection)
             db_connection.close()
@@ -94,7 +89,6 @@ def setup(bot: commands.Bot):
             if not rankings:
                 await interaction.followup.send("No pledge data found in the database.")
                 return
-            
             # Format the rankings
             ranking_text = "🏆 **Pledge Rankings by Total Points**\n\n"
             for i, (pledge, total_points) in enumerate(rankings, 1):
@@ -107,9 +101,7 @@ def setup(bot: commands.Bot):
                     medal = "🥉"
                 else:
                     medal = f"{i}."
-                
                 ranking_text += f"{medal} **{pledge}**: {total_points:,} points\n"
-            
             # Split message if too long (Discord has a 2000 character limit)
             if len(ranking_text) > 1900:
                 chunks = [ranking_text[i:i+1900] for i in range(0, len(ranking_text), 1900)]
@@ -117,7 +109,6 @@ def setup(bot: commands.Bot):
                     await interaction.followup.send(chunk)
             else:
                 await interaction.followup.send(ranking_text)
-                
         except Exception as e:
             await interaction.followup.send(f"An error occurred while fetching rankings: {str(e)}")
             raise
@@ -146,4 +137,3 @@ def setup(bot: commands.Bot):
         except Exception as e:
             await interaction.followup.send(f"An error occurred while generating the plot: {str(e)}")
             raise
-
