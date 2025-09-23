@@ -68,8 +68,10 @@ def plot_rankings(rankings: pd.Series) -> str:
     Returns:
         str: The filename of the saved bar plot image.
     """
-    sns.set_theme(style="darkgrid")
-    sns.barplot(x=rankings.index, y=rankings.values)
+    sns.set_theme(style="whitegrid")
+    # Ensure rankings are sorted in descending order for consistent plotting
+    rankings_sorted = rankings.sort_values(ascending=False)
+    sns.barplot(x=rankings_sorted.index, y=rankings_sorted.values)
     plt.title("Pledge Rankings by Total Points")
     plt.xlabel("Pledge")
     plt.ylabel("Total Points")
