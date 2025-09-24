@@ -149,6 +149,31 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
 
 def get_old_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, int, str, str, str]]:
     cursor = db_connection.cursor()
+    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status IN ('approved', 'pending')")
+    rows = cursor.fetchall()
+
+    # Convert the time strings to datetime objects
+    converted_rows = []
+    for row in rows:
+        time_str = row[0]
+        # If time_str is already a datetime object, use it directly
+        if isinstance(time_str, datetime):
+            converted_rows.append(row)
+        else:
+            # Convert string to datetime
+            try:
+                time_dt = datetime.fromisoformat(time_str)
+                converted_rows.append((time_dt, row[1], row[2], row[3], row[4]))
+            except (ValueError, TypeError):
+                # If conversion fails, skip this row
+                continue
+
+    return converted_rows
+
+
+def get_approved_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, int, str, str, str]]:
+    """Get only approved points for rankings and other approved-only operations."""
+    cursor = db_connection.cursor()
     cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'")
     rows = cursor.fetchall()
 

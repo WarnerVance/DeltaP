@@ -21,9 +21,8 @@ def get_pledge_points(db_connection) -> DataFrame:
         DataFrame: A pandas DataFrame containing the processed pledge points
         data with columns ['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'].
     """
-    cursor = db_connection.cursor()
-    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'")
-    rows = cursor.fetchall()
+    from PledgePoints.messages import get_approved_points
+    rows = get_approved_points(db_connection)
     df = pd.DataFrame(rows, columns=['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'])
     df['Time'] = pd.to_datetime(df['Time'])
     df = df.sort_values(by='Time', ascending=False)
