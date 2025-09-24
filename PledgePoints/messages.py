@@ -149,7 +149,7 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
 
 def get_old_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, int, str, str, str]]:
     cursor = db_connection.cursor()
-    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points")
+    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'")
     rows = cursor.fetchall()
 
     # Convert the time strings to datetime objects
@@ -203,7 +203,7 @@ def eliminate_duplicates(new_messages: list[tuple[datetime, int, str, str, str]]
 
 def add_new_points(db_connection: sqlite3.Connection, new_points: list[tuple[datetime, int, str, str, str]]) -> bool:
     cursor = db_connection.cursor()
-    cursor.executemany("INSERT INTO Points (Time, PointChange, Pledge, Brother, Comment) VALUES (?, ?, ?, ?, ?)",
+    cursor.executemany("INSERT INTO Points (Time, PointChange, Pledge, Brother, Comment, approval_status) VALUES (?, ?, ?, ?, ?, 'pending')",
                        new_points)
     db_connection.commit()
     db_connection.close()

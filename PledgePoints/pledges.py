@@ -22,7 +22,7 @@ def get_pledge_points(db_connection) -> DataFrame:
         data with columns ['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'].
     """
     cursor = db_connection.cursor()
-    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points")
+    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'")
     rows = cursor.fetchall()
     df = pd.DataFrame(rows, columns=['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'])
     df['Time'] = pd.to_datetime(df['Time'])
