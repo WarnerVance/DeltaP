@@ -68,13 +68,20 @@ def plot_rankings(rankings: pd.Series) -> str:
         str: The filename of the saved bar plot image.
     """
     sns.set_theme(style="whitegrid")
-    # Ensure rankings are sorted in descending order for consistent plotting
-    rankings_sorted = rankings.sort_values(ascending=False)
-    sns.barplot(x=rankings_sorted.index, y=rankings_sorted.values)
+    # Convert to DataFrame to ensure order is preserved and explicit
+    df = rankings.reset_index()
+    df.columns = ['Pledge', 'TotalPoints']
+    # Sort explicitly in descending order
+    df = df.sort_values('TotalPoints', ascending=False, ignore_index=True)
+    # Use categorical ordering to ensure correct plotting order
+    df['Pledge'] = pd.Categorical(df['Pledge'], categories=df['Pledge'], ordered=True)
+    plt.figure(figsize=(max(6, len(df) * 0.7), 6))
+    sns.barplot(x='Pledge', y='TotalPoints', data=df, order=df['Pledge'])
     plt.title("Pledge Rankings by Total Points")
     plt.xlabel("Pledge")
     plt.ylabel("Total Points")
     plt.xticks(rotation=45, ha='right', fontsize=10)
     plt.tight_layout()
     plt.savefig("rankings.png")
+    plt.close()
     return "rankings.png"
