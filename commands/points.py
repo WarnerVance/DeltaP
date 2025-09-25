@@ -335,8 +335,8 @@ def setup(bot: commands.Bot):
         """Reject specific point submissions by ID (comma-separated list)."""
         try:
             # Check if user has Executive Board role
-            from role.role_checking import check_eboard_role
-            if not await check_eboard_role(interaction):
+            from role.role_checking import check_eboard_role, check_info_systems_role
+            if not (await check_eboard_role(interaction) or await check_info_systems_role(interaction)):
                 await interaction.response.send_message("You don't have permission to reject points. Executive Board role required.", ephemeral=True)
                 return
 
