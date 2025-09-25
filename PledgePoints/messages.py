@@ -149,7 +149,7 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
 
 def get_old_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, int, str, str, str]]:
     cursor = db_connection.cursor()
-    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status IN ('approved', 'pending')")
+    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status IN ('approved', 'pending', 'rejected')")
     rows = cursor.fetchall()
 
     # Convert the time strings to datetime objects
