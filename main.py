@@ -57,6 +57,84 @@ async def on_ready():
     except Exception as e:
         print(f'Error synchronizing slash commands: {str(e)}')
 
+@bot.event
+async def on_message_delete(message):
+    """
+    Event handler that triggers when a message is deleted.
+    Sends the deleted message content to a specific channel for logging.
+    """
+    try:
+        # Channel ID where deleted messages will be sent
+        deleted_messages_channel_id = 1160689874299523133
+        
+        # Get the target channel
+        channel = bot.get_channel(deleted_messages_channel_id)
+        if not channel:
+            print(f"Warning: Could not find channel with ID {deleted_messages_channel_id}")
+            return
+        
+        # Skip if the message was from a bot
+        if message.author.bot:
+            return
+            
+        # Create embed for the deleted message
+        embed = discord.Embed(
+            title="🗑️ Message Deleted",
+            color=discord.Color.red(),
+            timestamp=datetime.now(pytz.UTC)
+        )
+        
+        # Add message details
+        embed.add_field(
+            name="Author", 
+            value=f"{message.author.mention} ({message.author.name}#{message.author.discriminator})", 
+            inline=True
+        )
+        embed.add_field(
+            name="Channel", 
+            value=f"{message.channel.mention} ({message.channel.name})", 
+            inline=True
+        )
+        embed.add_field(
+            name="Message ID", 
+            value=message.id, 
+            inline=True
+        )
+        
+        # Add message content (truncate if too long)
+        content = message.content if message.content else "*No text content*"
+        if len(content) > 1024:
+            content = content[:1021] + "..."
+        
+        embed.add_field(
+            name="Content", 
+            value=content, 
+            inline=False
+        )
+        
+        # Add attachments info if any
+        if message.attachments:
+            attachment_names = [att.filename for att in message.attachments]
+            embed.add_field(
+                name="Attachments", 
+                value=", ".join(attachment_names), 
+                inline=False
+            )
+        
+        # Add embeds info if any
+        if message.embeds:
+            embed.add_field(
+                name="Embeds", 
+                value=f"{len(message.embeds)} embed(s) were present", 
+                inline=False
+            )
+        
+        # Send the embed to the target channel
+        await channel.send(embed=embed)
+        
+    except Exception as e:
+        print(f"Error handling message deletion: {str(e)}")
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 if not TOKEN:
