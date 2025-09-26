@@ -22,6 +22,8 @@ ssl_context.verify_mode = ssl.CERT_NONE
 # Set up Discord bot with required permissions
 intents = discord.Intents.default()
 intents.message_content = True  # Enable message content intent
+intents.guilds = True  # Enable guild events
+intents.messages = True  # Enable message events (including deletions)
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Create aiohttp session with SSL context
@@ -63,6 +65,8 @@ async def on_message_delete(message):
     Event handler that triggers when a message is deleted.
     Sends the deleted message content to a specific channel for logging.
     """
+    print(f"Message deletion detected! Message ID: {message.id}, Author: {message.author}")
+    
     try:
         # Channel ID where deleted messages will be sent
         deleted_messages_channel_id = 1160689874299523133
@@ -73,8 +77,11 @@ async def on_message_delete(message):
             print(f"Warning: Could not find channel with ID {deleted_messages_channel_id}")
             return
         
+        print(f"Target channel found: {channel.name} ({channel.id})")
+        
         # Skip if the message was from a bot
         if message.author.bot:
+            print("Skipping bot message deletion")
             return
             
         # Create embed for the deleted message
@@ -131,6 +138,7 @@ async def on_message_delete(message):
         
         # Send the embed to the target channel
         await channel.send(embed=embed)
+        print(f"Successfully logged deleted message to {channel.name}")
         
     except Exception as e:
         print(f"Error handling message deletion: {str(e)}")
