@@ -8,16 +8,17 @@ import discord
 import pytz
 
 
-async def fetch_messages_from_days_ago(bot: discord.Client, channel_id: int, days_ago: int) -> list[
-    tuple[discord.User, datetime, str, discord.Message]]:
+async def fetch_messages_from_days_ago(
+    bot: discord.Client, channel_id: int, days_ago: int
+) -> list[tuple[discord.User, datetime, str, discord.Message]]:
     """
     Fetch messages from a Discord channel that were sent a certain number of days ago.
-    
+
     Args:
         bot (discord.Client): The Discord bot instance
         channel_id (int): The ID of the channel to fetch messages from
         days_ago (int): Number of days ago to fetch messages from
-        
+
     Returns:
         list[tuple[discord.User, datetime, str, discord.Message]]: List of tuples containing (author, created_at, content, message)
     """
@@ -40,7 +41,9 @@ async def fetch_messages_from_days_ago(bot: discord.Client, channel_id: int, day
     return messages
 
 
-async def process_message_content(content: str, valid_pledges: list) -> Optional[Tuple[int, str, str]]:
+async def process_message_content(
+    content: str, valid_pledges: list
+) -> Optional[Tuple[int, str, str]]:
     """
     Process a single message's content to extract point change, pledge name, and comment.
     Returns None if the message is invalid.
@@ -52,7 +55,7 @@ async def process_message_content(content: str, valid_pledges: list) -> Optional
         return None
 
     # Extract point change using regex
-    point_match = re.match(r'^([+-]\d+)', content)
+    point_match = re.match(r"^([+-]\d+)", content)
     if not point_match:
         return None
 
@@ -65,10 +68,10 @@ async def process_message_content(content: str, valid_pledges: list) -> Optional
         return None
 
     # Remove the point change from the content
-    remaining_content = content[len(point_match.group(1)):].strip()
+    remaining_content = content[len(point_match.group(1)) :].strip()
 
     # Split the remaining content into pledge name and comment
-    parts = remaining_content.split(' ', 1)
+    parts = remaining_content.split(" ", 1)
     if len(parts) < 2:
         return None
 
@@ -76,18 +79,22 @@ async def process_message_content(content: str, valid_pledges: list) -> Optional
     comment = parts[1].strip()
 
     if pledge == "To":
-        pledge = comment.split(' ', 1)[0].title()
+        pledge = comment.split(" ", 1)[0].title()
     if pledge == "Matt":
         pledge = "Matthew"
     if pledge == "Ozempic":
         pledge = "Eli"
+    if pledge == "Pledge":
+        pledge = "Blake"
     if pledge not in valid_pledges:
         return None
 
     return point_change, pledge, comment
 
 
-async def add_reactions_with_rate_limit(messages: List[Tuple[discord.Message, bool]], rate_limit: float = 0.2):
+async def add_reactions_with_rate_limit(
+    messages: List[Tuple[discord.Message, bool]], rate_limit: float = 0.2
+):
     """
     Add reactions to messages with rate limiting.
     messages: List of (message, success) tuples where success is True for 👍 and False for 👎
@@ -95,7 +102,7 @@ async def add_reactions_with_rate_limit(messages: List[Tuple[discord.Message, bo
     """
     for message, success in messages:
         try:
-            emoji = '👍' if success else '👎'
+            emoji = "👍" if success else "👎"
             await message.add_reaction(emoji)
             await asyncio.sleep(rate_limit)  # Rate limit the reactions
         except Exception:
@@ -103,8 +110,9 @@ async def add_reactions_with_rate_limit(messages: List[Tuple[discord.Message, bo
             continue
 
 
-async def process_messages(messages: list[tuple[discord.User, datetime, str, discord.Message]]) -> list[
-    tuple[datetime, int, str, str, str]]:
+async def process_messages(
+    messages: list[tuple[discord.User, datetime, str, discord.Message]],
+) -> list[tuple[datetime, int, str, str, str]]:
     """
     Process messages to extract point changes, pledge names, and comments.
     Returns processed messages and handles reactions separately with rate limiting.
@@ -128,7 +136,7 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
         "Will",
         "Zach",
         "Blake",
-        "Devin"
+        "Devin",
     ]
     for author, timestamp, content, message in messages:
         result = await process_message_content(content, valid_pledges)
@@ -138,18 +146,24 @@ async def process_messages(messages: list[tuple[discord.User, datetime, str, dis
             continue
 
         point_change, pledge, comment = result
-        processed_messages.append((timestamp, point_change, pledge, author.name, comment))
+        processed_messages.append(
+            (timestamp, point_change, pledge, author.name, comment)
+        )
         reaction_queue.append((message, True))
 
     # Handle reactions separately with rate limiting
     asyncio.create_task(add_reactions_with_rate_limit(reaction_queue))
-    
+
     return processed_messages
 
 
-def get_old_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, int, str, str, str]]:
+def get_old_points(
+    db_connection: sqlite3.Connection,
+) -> list[tuple[datetime, int, str, str, str]]:
     cursor = db_connection.cursor()
-    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status IN ('approved', 'pending', 'rejected')")
+    cursor.execute(
+        "SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status IN ('approved', 'pending', 'rejected')"
+    )
     rows = cursor.fetchall()
 
     # Convert the time strings to datetime objects
@@ -171,10 +185,14 @@ def get_old_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, in
     return converted_rows
 
 
-def get_approved_points(db_connection: sqlite3.Connection) -> list[tuple[datetime, int, str, str, str]]:
+def get_approved_points(
+    db_connection: sqlite3.Connection,
+) -> list[tuple[datetime, int, str, str, str]]:
     """Get only approved points for rankings and other approved-only operations."""
     cursor = db_connection.cursor()
-    cursor.execute("SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'")
+    cursor.execute(
+        "SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'"
+    )
     rows = cursor.fetchall()
 
     # Convert the time strings to datetime objects
@@ -196,9 +214,10 @@ def get_approved_points(db_connection: sqlite3.Connection) -> list[tuple[datetim
     return converted_rows
 
 
-def eliminate_duplicates(new_messages: list[tuple[datetime, int, str, str, str]],
-                         old_points: list[tuple[datetime, int, str, str, str]]) -> list[
-    tuple[datetime, int, str, str, str]]:
+def eliminate_duplicates(
+    new_messages: list[tuple[datetime, int, str, str, str]],
+    old_points: list[tuple[datetime, int, str, str, str]],
+) -> list[tuple[datetime, int, str, str, str]]:
     """
     Eliminate duplicates by comparing the relevant fields of the tuples.
     Converts datetime to string for comparison to avoid microsecond differences.
@@ -207,7 +226,7 @@ def eliminate_duplicates(new_messages: list[tuple[datetime, int, str, str, str]]
     old_points_set = set()
     for point in old_points:
         # Convert datetime to string in a consistent format
-        time_str = point[0].strftime('%Y-%m-%d %H:%M:%S')
+        time_str = point[0].strftime("%Y-%m-%d %H:%M:%S")
         # Create a tuple of the relevant fields as strings
         point_key = (time_str, str(point[1]), point[2], point[3], point[4])
         old_points_set.add(point_key)
@@ -216,7 +235,7 @@ def eliminate_duplicates(new_messages: list[tuple[datetime, int, str, str, str]]
     unique_messages = []
     for message in new_messages:
         # Convert datetime to string in the same format
-        time_str = message[0].strftime('%Y-%m-%d %H:%M:%S')
+        time_str = message[0].strftime("%Y-%m-%d %H:%M:%S")
         # Create a tuple of the relevant fields as strings
         message_key = (time_str, str(message[1]), message[2], message[3], message[4])
 
@@ -226,10 +245,15 @@ def eliminate_duplicates(new_messages: list[tuple[datetime, int, str, str, str]]
     return unique_messages
 
 
-def add_new_points(db_connection: sqlite3.Connection, new_points: list[tuple[datetime, int, str, str, str]]) -> bool:
+def add_new_points(
+    db_connection: sqlite3.Connection,
+    new_points: list[tuple[datetime, int, str, str, str]],
+) -> bool:
     cursor = db_connection.cursor()
-    cursor.executemany("INSERT INTO Points (Time, PointChange, Pledge, Brother, Comment, approval_status) VALUES (?, ?, ?, ?, ?, 'pending')",
-                       new_points)
+    cursor.executemany(
+        "INSERT INTO Points (Time, PointChange, Pledge, Brother, Comment, approval_status) VALUES (?, ?, ?, ?, ?, 'pending')",
+        new_points,
+    )
     db_connection.commit()
     db_connection.close()
     return True
