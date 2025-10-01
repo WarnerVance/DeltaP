@@ -7,3 +7,4 @@ __pycache__
 MasterPoints.csv
 .DS_Store
 .vscode
+pledge_points.db
