@@ -1,11 +1,14 @@
 import asyncio
-import re
-import sqlite3
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 import discord
 import pytz
+
+from PledgePoints.constants import EMOJI_FAILURE, EMOJI_SUCCESS, REACTION_RATE_LIMIT_SECONDS
+from PledgePoints.models import PointEntry
+from PledgePoints.sqlutils import DatabaseManager
+from PledgePoints.validators import parse_point_message
 
 
 async def fetch_messages_from_days_ago(
@@ -41,219 +44,118 @@ async def fetch_messages_from_days_ago(
     return messages
 
 
-async def process_message_content(
-    content: str, valid_pledges: list
-) -> Optional[Tuple[int, str, str]]:
-    """
-    Process a single message's content to extract point change, pledge name, and comment.
-    Returns None if the message is invalid.
-    """
-    sql_int_min = -9223372036854775808
-    sql_int_max = 9223372036854775807
-
-    if not content.strip():
-        return None
-
-    # Extract point change using regex
-    point_match = re.match(r"^([+-]\d+)", content)
-    if not point_match:
-        return None
-
-    try:
-        point_change = int(point_match.group(1))
-        # Check if point change fits within SQL integer limits
-        if point_change < sql_int_min or point_change > sql_int_max:
-            return None
-    except ValueError:
-        return None
-
-    # Remove the point change from the content
-    remaining_content = content[len(point_match.group(1)) :].strip()
-
-    # Split the remaining content into pledge name and comment
-    parts = remaining_content.split(" ", 1)
-    if len(parts) < 2:
-        return None
-
-    pledge = parts[0].title()
-    comment = parts[1].strip()
-
-    if pledge == "To":
-        pledge = comment.split(" ", 1)[0].title()
-    if pledge == "Matt":
-        pledge = "Matthew"
-    if pledge == "Ozempic":
-        pledge = "Eli"
-    if pledge == "Pledge":
-        pledge = "Blake"
-    if pledge not in valid_pledges:
-        return None
-
-    return point_change, pledge, comment
 
 
 async def add_reactions_with_rate_limit(
-    messages: List[Tuple[discord.Message, bool]], rate_limit: float = 0.2
+    messages: List[Tuple[discord.Message, bool]],
+    rate_limit: float = REACTION_RATE_LIMIT_SECONDS
 ):
     """
     Add reactions to messages with rate limiting.
-    messages: List of (message, success) tuples where success is True for 👍 and False for 👎
-    rate_limit: Minimum time between reactions in seconds
+
+    Adds emoji reactions to Discord messages to indicate validation status.
+    Includes rate limiting to avoid hitting Discord API limits.
+
+    Args:
+        messages: List of (message, success) tuples where success determines emoji
+        rate_limit: Minimum time between reactions in seconds
     """
     for message, success in messages:
         try:
-            emoji = "👍" if success else "👎"
+            emoji = EMOJI_SUCCESS if success else EMOJI_FAILURE
             await message.add_reaction(emoji)
             await asyncio.sleep(rate_limit)  # Rate limit the reactions
         except Exception:
-            # Skip if we can't add the reaction
+            # Skip if we can't add the reaction (permissions, deleted message, etc.)
             continue
 
 
 async def process_messages(
     messages: list[tuple[discord.User, datetime, str, discord.Message]],
-) -> list[tuple[datetime, int, str, str, str]]:
+) -> List[PointEntry]:
     """
     Process messages to extract point changes, pledge names, and comments.
-    Returns processed messages and handles reactions separately with rate limiting.
+
+    Validates each message against the expected format (+/-N PledgeName Comment)
+    and returns a list of PointEntry objects. Also handles adding reactions
+    to messages (thumbs up for valid, thumbs down for invalid).
+
+    Args:
+        messages: List of tuples containing (author, timestamp, content, message)
+
+    Returns:
+        List[PointEntry]: List of validated point entries ready for database insertion
     """
-    processed_messages = []
+    processed_entries = []
     reaction_queue = []
-    valid_pledges = [
-        "Eli",
-        "Evan",
-        "Felix",
-        "George",
-        "Henrik",
-        "James",
-        "Kashyap",
-        "Krishiv",
-        "Logan",
-        "Matthew",
-        "Milo",
-        "Nick",
-        "Tony",
-        "Will",
-        "Zach",
-        "Blake",
-        "Devin",
-    ]
+
     for author, timestamp, content, message in messages:
-        result = await process_message_content(content, valid_pledges)
+        # Use centralized validator to parse message
+        result = parse_point_message(content)
 
         if result is None:
+            # Invalid message - queue failure reaction
             reaction_queue.append((message, False))
             continue
 
         point_change, pledge, comment = result
-        processed_messages.append(
-            (timestamp, point_change, pledge, author.name, comment)
+
+        # Create PointEntry object
+        entry = PointEntry(
+            time=timestamp,
+            point_change=point_change,
+            pledge=pledge,
+            brother=author.name,
+            comment=comment
         )
+        processed_entries.append(entry)
         reaction_queue.append((message, True))
 
     # Handle reactions separately with rate limiting
     asyncio.create_task(add_reactions_with_rate_limit(reaction_queue))
 
-    return processed_messages
-
-
-def get_old_points(
-    db_connection: sqlite3.Connection,
-) -> list[tuple[datetime, int, str, str, str]]:
-    cursor = db_connection.cursor()
-    cursor.execute(
-        "SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status IN ('approved', 'pending', 'rejected')"
-    )
-    rows = cursor.fetchall()
-
-    # Convert the time strings to datetime objects
-    converted_rows = []
-    for row in rows:
-        time_str = row[0]
-        # If time_str is already a datetime object, use it directly
-        if isinstance(time_str, datetime):
-            converted_rows.append(row)
-        else:
-            # Convert string to datetime
-            try:
-                time_dt = datetime.fromisoformat(time_str)
-                converted_rows.append((time_dt, row[1], row[2], row[3], row[4]))
-            except (ValueError, TypeError):
-                # If conversion fails, skip this row
-                continue
-
-    return converted_rows
-
-
-def get_approved_points(
-    db_connection: sqlite3.Connection,
-) -> list[tuple[datetime, int, str, str, str]]:
-    """Get only approved points for rankings and other approved-only operations."""
-    cursor = db_connection.cursor()
-    cursor.execute(
-        "SELECT Time, PointChange, Pledge, Brother, Comment FROM Points WHERE approval_status = 'approved'"
-    )
-    rows = cursor.fetchall()
-
-    # Convert the time strings to datetime objects
-    converted_rows = []
-    for row in rows:
-        time_str = row[0]
-        # If time_str is already a datetime object, use it directly
-        if isinstance(time_str, datetime):
-            converted_rows.append(row)
-        else:
-            # Convert string to datetime
-            try:
-                time_dt = datetime.fromisoformat(time_str)
-                converted_rows.append((time_dt, row[1], row[2], row[3], row[4]))
-            except (ValueError, TypeError):
-                # If conversion fails, skip this row
-                continue
-
-    return converted_rows
+    return processed_entries
 
 
 def eliminate_duplicates(
-    new_messages: list[tuple[datetime, int, str, str, str]],
-    old_points: list[tuple[datetime, int, str, str, str]],
-) -> list[tuple[datetime, int, str, str, str]]:
+    new_entries: List[PointEntry],
+    db_manager: DatabaseManager,
+) -> List[PointEntry]:
     """
-    Eliminate duplicates by comparing the relevant fields of the tuples.
-    Converts datetime to string for comparison to avoid microsecond differences.
+    Eliminate duplicate point entries by comparing against existing database entries.
+
+    Compares new entries against all existing entries (pending, approved, rejected)
+    to avoid duplicate insertions. Converts datetime to string for comparison
+    to avoid microsecond differences.
+
+    Args:
+        new_entries: List of new point entries to check for duplicates
+        db_manager: Database manager instance for querying existing entries
+
+    Returns:
+        List[PointEntry]: List of unique entries not already in the database
     """
+    # Get all existing points from the database
+    old_points = db_manager.get_all_points()
+
     # Convert old points to a set of string representations for faster lookup
     old_points_set = set()
     for point in old_points:
         # Convert datetime to string in a consistent format
-        time_str = point[0].strftime("%Y-%m-%d %H:%M:%S")
+        time_str = point.time.strftime("%Y-%m-%d %H:%M:%S")
         # Create a tuple of the relevant fields as strings
-        point_key = (time_str, str(point[1]), point[2], point[3], point[4])
+        point_key = (time_str, str(point.point_change), point.pledge, point.brother, point.comment)
         old_points_set.add(point_key)
 
-    # Filter new messages
-    unique_messages = []
-    for message in new_messages:
+    # Filter new entries
+    unique_entries = []
+    for entry in new_entries:
         # Convert datetime to string in the same format
-        time_str = message[0].strftime("%Y-%m-%d %H:%M:%S")
+        time_str = entry.time.strftime("%Y-%m-%d %H:%M:%S")
         # Create a tuple of the relevant fields as strings
-        message_key = (time_str, str(message[1]), message[2], message[3], message[4])
+        entry_key = (time_str, str(entry.point_change), entry.pledge, entry.brother, entry.comment)
 
-        if message_key not in old_points_set:
-            unique_messages.append(message)
+        if entry_key not in old_points_set:
+            unique_entries.append(entry)
 
-    return unique_messages
-
-
-def add_new_points(
-    db_connection: sqlite3.Connection,
-    new_points: list[tuple[datetime, int, str, str, str]],
-) -> bool:
-    cursor = db_connection.cursor()
-    cursor.executemany(
-        "INSERT INTO Points (Time, PointChange, Pledge, Brother, Comment, approval_status) VALUES (?, ?, ?, ?, ?, 'pending')",
-        new_points,
-    )
-    db_connection.commit()
-    db_connection.close()
-    return True
+    return unique_entries

@@ -3,27 +3,46 @@ from matplotlib import pyplot as plt
 from pandas import DataFrame
 import seaborn as sns
 
+from PledgePoints.sqlutils import DatabaseManager
 
 
-def get_pledge_points(db_connection) -> DataFrame:
+def get_pledge_points(db_manager: DatabaseManager) -> DataFrame:
     """
-    Fetches and processes pledge points data from the database.
+    Fetches and processes approved pledge points data from the database.
 
-    This function retrieves the pledge points data including the columns
-    Time, PointChange, Pledge, Brother, and Comment from the database.
-    It processes the data by converting the Time column to a datetime object
-    and sorting it in descending order.
+    Retrieves only approved point entries and converts them into a pandas
+    DataFrame for analysis. The data is sorted by time in descending order
+    (most recent first).
 
     Args:
-        db_connection: Database connection object used to query the data.
+        db_manager: DatabaseManager instance for accessing the database
 
     Returns:
-        DataFrame: A pandas DataFrame containing the processed pledge points
-        data with columns ['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'].
+        DataFrame: A pandas DataFrame containing approved pledge points
+        with columns ['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'].
+        Sorted by Time in descending order.
     """
-    from PledgePoints.messages import get_approved_points
-    rows = get_approved_points(db_connection)
-    df = pd.DataFrame(rows, columns=['Time', 'PointChange', 'Pledge', 'Brother', 'Comment'])
+    # Get approved points using the database manager
+    approved_entries = db_manager.get_approved_points()
+
+    # Convert PointEntry objects to DataFrame
+    data = []
+    for entry in approved_entries:
+        data.append({
+            'Time': entry.time,
+            'PointChange': entry.point_change,
+            'Pledge': entry.pledge,
+            'Brother': entry.brother,
+            'Comment': entry.comment
+        })
+
+    df = pd.DataFrame(data)
+
+    # Handle empty dataframe case
+    if df.empty:
+        return df
+
+    # Ensure Time is datetime and sort
     df['Time'] = pd.to_datetime(df['Time'])
     df = df.sort_values(by='Time', ascending=False)
     return df

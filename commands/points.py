@@ -1,103 +1,77 @@
 import os
-import sqlite3
 from datetime import datetime
 
+import discord
 from discord.ext import commands
-from dotenv import load_dotenv
-from PledgePoints.messages import *
-from PledgePoints.pledges import *
-
-load_dotenv()
-master_point_csv_name = os.getenv('CSV_NAME')
-if not master_point_csv_name:
-    raise ValueError("CSV_NAME not found in .env file")
-
-
-def initialize_database(db_file_name: str):
-    """Initialize the database with the required table structure."""
-    conn = sqlite3.connect(db_file_name)
-    cursor = conn.cursor()
-    # Create the Points table if it doesn't exist
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS Points (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Time TEXT,
-            PointChange INTEGER,
-            Pledge TEXT,
-            Brother TEXT,
-            Comment TEXT,
-            approval_status TEXT DEFAULT 'pending',
-            approved_by TEXT,
-            approval_timestamp TEXT
-        )
-    """)
-
-    # Add new columns to existing table if they don't exist
-    try:
-        cursor.execute("ALTER TABLE Points ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-
-    try:
-        cursor.execute("ALTER TABLE Points ADD COLUMN approval_status TEXT DEFAULT 'pending'")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-
-    try:
-        cursor.execute("ALTER TABLE Points ADD COLUMN approved_by TEXT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-
-    try:
-        cursor.execute("ALTER TABLE Points ADD COLUMN approval_timestamp TEXT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-
-    conn.commit()
-    conn.close()
-    print(f"Database initialized: {db_file_name}")
-
-
+from config.settings import get_config
+from PledgePoints.messages import fetch_messages_from_days_ago, process_messages, eliminate_duplicates
+from PledgePoints.pledges import get_pledge_points, rank_pledges, plot_rankings
+from PledgePoints.sqlutils import DatabaseManager
+from utils.discord_helpers import (
+    send_chunked_message,
+    format_point_entry_detailed,
+    format_rankings_text,
+    format_pending_points_list,
+    format_approval_confirmation,
+    format_approval_status
+)
 def setup(bot: commands.Bot):
-    master_point_file_name = os.getenv('CSV_NAME')
-    if not master_point_file_name:
-        raise ValueError("CSV_NAME not found in .env file")
-    table_name = os.getenv('TABLE_NAME')
-    if not table_name:
-        raise ValueError("TABLE_NAME not found in .env file")
-    channel_id_str = os.getenv('CHANNEL_ID')
-    if not channel_id_str:
-        raise ValueError("CHANNEL_ID not found in .env file")
+    """
+    Set up all pledge points-related slash commands for the bot.
 
-    try:
-        channel_id = int(channel_id_str)
-    except ValueError:
-        raise ValueError(f"CHANNEL_ID must be a valid integer, got {channel_id_str}")
-    # Initialize the database
-    initialize_database(master_point_file_name)
+    Initializes the database manager and registers all command handlers
+    with the Discord bot. Commands include updating points, viewing rankings,
+    approving/rejecting points, and more.
+
+    Args:
+        bot: Discord bot instance to register commands with
+    """
+    # Load configuration from centralized config
+    config = get_config()
+
+    # Initialize the database manager
+    db_manager = DatabaseManager(config.database_path)
 
     @bot.tree.command(name="update_pledge_points", description="Update the point Database.")
     async def update_pledge_points(interaction: discord.Interaction, days_ago: int):
+        """
+        Fetch and process messages from the points channel to update the database.
+
+        This command scans the configured channel for messages from the specified
+        number of days ago, validates them, and adds new point entries to the database.
+        Duplicates are automatically filtered out.
+
+        Args:
+            interaction: Discord interaction from the slash command
+            days_ago: Number of days in the past to fetch messages from
+        """
+        from role.role_checking import check_brother_role
+        if not await check_brother_role(interaction):
+            await interaction.response.send_message("You don't have permission to do that. Brother role required.", ephemeral=True)
+            return
         try:
             await interaction.response.send_message(f"Updating pledge points for {days_ago} days ago")
 
-            db_connection = sqlite3.connect(master_point_file_name)
-            messages = await fetch_messages_from_days_ago(bot, channel_id, days_ago)
+            # Fetch messages from Discord using config
+            messages = await fetch_messages_from_days_ago(bot, config.points_channel_id, days_ago)
 
             if not messages:
                 await interaction.followup.send("No messages found for the specified time period.")
                 return
 
-            new_points = await process_messages(messages)
-            old_points = get_old_points(db_connection)
-            new_points = eliminate_duplicates(new_points, old_points)
+            # Process messages into PointEntry objects
+            new_entries = await process_messages(messages)
 
-            if not new_points:
+            # Eliminate duplicates using the database manager
+            unique_entries = eliminate_duplicates(new_entries, db_manager)
+
+            if not unique_entries:
                 await interaction.followup.send("No new points to add to the database.")
                 return
 
-            add_new_points(db_connection, new_points)
-            await interaction.followup.send(f"Successfully added {len(new_points)} new points to the database.")
+            # Add new entries to the database
+            count = db_manager.add_point_entries(unique_entries)
+            await interaction.followup.send(f"Successfully added {count} new points to the database.")
 
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
@@ -106,55 +80,67 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="pledge_rankings", description="Show rankings of all pledges by total points.")
     async def pledge_rankings(interaction: discord.Interaction):
+        """
+        Display a leaderboard of all pledges ranked by total approved points.
+
+        Shows pledges in descending order with medal emojis for the top 3.
+        Only includes approved points in the calculations.
+
+        Args:
+            interaction: Discord interaction from the slash command
+        """
+        from role.role_checking import check_brother_role
+        if not await check_brother_role(interaction):
+            await interaction.response.send_message("You don't have permission to do that. Brother role required.", ephemeral=True)
+            return
         try:
             await interaction.response.send_message("Fetching pledge rankings...")
-            db_connection = sqlite3.connect(master_point_file_name)
-            points = get_pledge_points(db_connection)
-            db_connection.close()
+
+            # Get pledge points and rankings using database manager
+            points = get_pledge_points(db_manager)
             rankings_df = rank_pledges(points)
             rankings = [(pledge, int(total_points)) for pledge, total_points in rankings_df.items()]
 
             if not rankings:
                 await interaction.followup.send("No pledge data found in the database.")
                 return
-            # Format the rankings
-            ranking_text = "🏆 **Pledge Rankings by Total Points**\n\n"
-            for i, (pledge, total_points) in enumerate(rankings, 1):
-                # Add medal emojis for top 3
-                if i == 1:
-                    medal = "🥇"
-                elif i == 2:
-                    medal = "🥈"
-                elif i == 3:
-                    medal = "🥉"
-                else:
-                    medal = f"{i}."
-                ranking_text += f"{medal} **{pledge}**: {total_points:,} points\n"
-            # Split message if too long (Discord has a 2000 character limit)
-            if len(ranking_text) > 1900:
-                chunks = [ranking_text[i:i+1900] for i in range(0, len(ranking_text), 1900)]
-                for chunk in chunks:
-                    await interaction.followup.send(chunk)
-            else:
-                await interaction.followup.send(ranking_text)
+
+            # Format the rankings using utility function
+            ranking_text = format_rankings_text(rankings)
+
+            # Send with automatic chunking if needed
+            await send_chunked_message(interaction, ranking_text)
         except Exception as e:
             await interaction.followup.send(f"An error occurred while fetching rankings: {str(e)}")
             raise
 
     @bot.tree.command(name="plot_rankings", description="Plot rankings of all pledges by total points.")
     async def plot_rankings_command(interaction: discord.Interaction):
+        """
+        Generate and display a bar chart of pledge rankings.
+
+        Creates a visual representation of pledge points showing all pledges
+        ranked by their total approved points.
+
+        Args:
+            interaction: Discord interaction from the slash command
+        """
+        from role.role_checking import check_brother_role
+        if not await check_brother_role(interaction):
+            await interaction.response.send_message("You don't have permission to do that. Brother role required.", ephemeral=True)
+            return
         try:
             await interaction.response.send_message("Generating pledge rankings plot...")
 
-            db_connection = sqlite3.connect(master_point_file_name)
-            points = get_pledge_points(db_connection)
-            db_connection.close()
+            # Get pledge points and rankings using database manager
+            points = get_pledge_points(db_manager)
             rankings_df = rank_pledges(points)
 
             if rankings_df.empty:
                 await interaction.followup.send("No pledge data found in the database.")
                 return
 
+            # Generate plot and send as file
             plot_file = plot_rankings(rankings_df)
             await interaction.followup.send(file=discord.File(plot_file))
 
@@ -168,50 +154,34 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="view_pending_points", description="View all pending point submissions that need approval")
     async def view_pending_points(interaction: discord.Interaction):
-        """View all pending point submissions that need approval."""
+        """
+        Display all point submissions awaiting approval.
+
+        Shows detailed information for each pending entry including timestamp,
+        brother who submitted, points, pledge, and comment.
+
+        Args:
+            interaction: Discord interaction from the slash command
+        """
+        from role.role_checking import check_brother_role
+        if not await check_brother_role(interaction):
+            await interaction.response.send_message("You don't have permission to do that. Brother role required.", ephemeral=True)
+            return
         try:
             await interaction.response.send_message("Fetching pending points...")
 
-            db_connection = sqlite3.connect(master_point_file_name)
-            cursor = db_connection.cursor()
-            cursor.execute("""
-                SELECT id, Time, PointChange, Pledge, Brother, Comment
-                FROM Points
-                WHERE approval_status = 'pending'
-                ORDER BY Time DESC
-            """)
-            rows = cursor.fetchall()
-            db_connection.close()
+            # Get pending points using database manager
+            pending_entries = db_manager.get_pending_points()
 
-            if not rows:
+            if not pending_entries:
                 await interaction.followup.send("No pending points found.")
                 return
 
-            # Format the pending points
-            pending_text = "📋 **Pending Point Submissions**\n\n"
-            for row in rows:
-                point_id, time_str, point_change, pledge, brother, comment = row
-                # Convert time string to readable format
-                try:
-                    time_dt = datetime.fromisoformat(time_str)
-                    time_formatted = time_dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
-                    time_formatted = time_str
+            # Format the pending points using utility function
+            pending_text = format_pending_points_list(pending_entries)
 
-                pending_text += f"**ID: {point_id}**\n"
-                pending_text += f"⏰ Time: {time_formatted}\n"
-                pending_text += f"👤 Brother: {brother}\n"
-                pending_text += f"📊 Points: {point_change:+d}\n"
-                pending_text += f"🎯 Pledge: {pledge}\n"
-                pending_text += f"💬 Comment: {comment}\n\n"
-
-            # Split message if too long
-            if len(pending_text) > 1900:
-                chunks = [pending_text[i:i+1900] for i in range(0, len(pending_text), 1900)]
-                for chunk in chunks:
-                    await interaction.followup.send(chunk)
-            else:
-                await interaction.followup.send(pending_text)
+            # Send with automatic chunking if needed
+            await send_chunked_message(interaction, pending_text)
 
         except Exception as e:
             await interaction.followup.send(f"An error occurred while fetching pending points: {str(e)}")
@@ -219,7 +189,16 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="approve_points", description="Approve specific point submissions by ID or all pending points")
     async def approve_points(interaction: discord.Interaction, point_ids: str):
-        """Approve specific point submissions by ID (comma-separated list), or all pending points if 'all' is input."""
+        """
+        Approve pending point submissions.
+
+        Allows E-Board members to approve point submissions by ID or approve all
+        pending points at once using 'all'. Approved points count toward pledge rankings.
+
+        Args:
+            interaction: Discord interaction from the slash command
+            point_ids: Comma-separated list of IDs (e.g., "1,2,3") or "all" for all pending
+        """
         try:
             # Check if user has Executive Board role
             from role.role_checking import check_eboard_role, check_info_systems_role
@@ -229,97 +208,43 @@ def setup(bot: commands.Bot):
 
             await interaction.response.send_message("Processing approval...")
 
-            db_connection = sqlite3.connect(master_point_file_name)
-            cursor = db_connection.cursor()
-
             approve_all = point_ids.strip().lower() == "all"
+            approver = interaction.user.display_name
+
             if approve_all:
-                # Approve all pending points
-                cursor.execute("""
-                    SELECT id, Pledge, PointChange, Brother
-                    FROM Points
-                    WHERE approval_status = 'pending'
-                """)
-                existing_points = cursor.fetchall()
-                if not existing_points:
+                # Approve all pending points using database manager
+                approved_entries = db_manager.approve_all_pending(approver)
+
+                if not approved_entries:
                     await interaction.followup.send("No pending points found to approve.")
-                    db_connection.close()
                     return
 
-                current_time = datetime.now().isoformat()
-                approver = interaction.user.display_name
+                # Format response using utility function
+                approved_text = format_approval_confirmation(approved_entries, approved=True)
+                approved_text = approved_text.replace("Approved", f"Approved ALL ({len(approved_entries)})")
 
-                cursor.execute("""
-                    UPDATE Points
-                    SET approval_status = 'approved',
-                        approved_by = ?,
-                        approval_timestamp = ?
-                    WHERE approval_status = 'pending'
-                """, (approver, current_time))
-                db_connection.commit()
-                db_connection.close()
-
-                approved_text = f"✅ **Approved ALL ({len(existing_points)}) pending point submission(s):**\n\n"
-                for point_id, pledge, point_change, brother in existing_points:
-                    approved_text += f"**ID {point_id}**: {brother} → {pledge} ({point_change:+d} points)\n"
-
-                # Split message if too long
-                if len(approved_text) > 1900:
-                    chunks = [approved_text[i:i+1900] for i in range(0, len(approved_text), 1900)]
-                    for chunk in chunks:
-                        await interaction.followup.send(chunk)
-                else:
-                    await interaction.followup.send(approved_text)
+                # Send with automatic chunking if needed
+                await send_chunked_message(interaction, approved_text)
             else:
                 # Parse point IDs
                 try:
                     ids = [int(id.strip()) for id in point_ids.split(',')]
                 except ValueError:
                     await interaction.followup.send("Invalid point IDs. Please provide comma-separated numbers or 'all'.")
-                    db_connection.close()
                     return
 
-                # Check which IDs exist and are pending
-                placeholders = ','.join('?' for _ in ids)
-                cursor.execute(f"""
-                    SELECT id, Pledge, PointChange, Brother
-                    FROM Points
-                    WHERE id IN ({placeholders}) AND approval_status = 'pending'
-                """, ids)
-                existing_points = cursor.fetchall()
+                # Approve specific points using database manager
+                approved_entries = db_manager.approve_points(ids, approver)
 
-                if not existing_points:
+                if not approved_entries:
                     await interaction.followup.send("No pending points found with the provided IDs.")
-                    db_connection.close()
                     return
 
-                # Update approval status
-                current_time = datetime.now().isoformat()
-                approver = interaction.user.display_name
+                # Format response using utility function
+                approved_text = format_approval_confirmation(approved_entries, approved=True)
 
-                cursor.execute(f"""
-                    UPDATE Points
-                    SET approval_status = 'approved',
-                        approved_by = ?,
-                        approval_timestamp = ?
-                    WHERE id IN ({placeholders}) AND approval_status = 'pending'
-                """, [approver, current_time] + ids)
-
-                db_connection.commit()
-                db_connection.close()
-
-                # Format response
-                approved_text = f"✅ **Approved {len(existing_points)} point submission(s):**\n\n"
-                for point_id, pledge, point_change, brother in existing_points:
-                    approved_text += f"**ID {point_id}**: {brother} → {pledge} ({point_change:+d} points)\n"
-
-                # Split message if too long
-                if len(approved_text) > 1900:
-                    chunks = [approved_text[i:i+1900] for i in range(0, len(approved_text), 1900)]
-                    for chunk in chunks:
-                        await interaction.followup.send(chunk)
-                else:
-                    await interaction.followup.send(approved_text)
+                # Send with automatic chunking if needed
+                await send_chunked_message(interaction, approved_text)
 
         except Exception as e:
             # If the error is due to message length, send a more helpful message
@@ -332,7 +257,16 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="reject_points", description="Reject specific point submissions by ID")
     async def reject_points(interaction: discord.Interaction, point_ids: str):
-        """Reject specific point submissions by ID (comma-separated list)."""
+        """
+        Reject pending point submissions.
+
+        Allows E-Board members to reject point submissions by ID. Rejected points
+        will not count toward pledge rankings.
+
+        Args:
+            interaction: Discord interaction from the slash command
+            point_ids: Comma-separated list of IDs to reject (e.g., "1,2,3")
+        """
         try:
             # Check if user has Executive Board role
             from role.role_checking import check_eboard_role, check_info_systems_role
@@ -349,42 +283,16 @@ def setup(bot: commands.Bot):
                 await interaction.followup.send("Invalid point IDs. Please provide comma-separated numbers.")
                 return
 
-            db_connection = sqlite3.connect(master_point_file_name)
-            cursor = db_connection.cursor()
+            # Reject points using database manager
+            rejector = interaction.user.display_name
+            rejected_entries = db_manager.reject_points(ids, rejector)
 
-            # Check which IDs exist and are pending
-            placeholders = ','.join('?' for _ in ids)
-            cursor.execute(f"""
-                SELECT id, Pledge, PointChange, Brother
-                FROM Points
-                WHERE id IN ({placeholders}) AND approval_status = 'pending'
-            """, ids)
-            existing_points = cursor.fetchall()
-
-            if not existing_points:
+            if not rejected_entries:
                 await interaction.followup.send("No pending points found with the provided IDs.")
-                db_connection.close()
                 return
 
-            # Update approval status
-            current_time = datetime.now().isoformat()
-            approver = interaction.user.display_name
-
-            cursor.execute(f"""
-                UPDATE Points
-                SET approval_status = 'rejected',
-                    approved_by = ?,
-                    approval_timestamp = ?
-                WHERE id IN ({placeholders}) AND approval_status = 'pending'
-            """, [approver, current_time] + ids)
-
-            db_connection.commit()
-            db_connection.close()
-
-            # Format response
-            rejected_text = f"❌ **Rejected {len(existing_points)} point submission(s):**\n\n"
-            for point_id, pledge, point_change, brother in existing_points:
-                rejected_text += f"**ID {point_id}**: {brother} → {pledge} ({point_change:+d} points)\n"
+            # Format response using utility function
+            rejected_text = format_approval_confirmation(rejected_entries, approved=False)
 
             await interaction.followup.send(rejected_text)
 
@@ -394,64 +302,33 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="view_point_details", description="View detailed information about a specific point entry")
     async def view_point_details(interaction: discord.Interaction, point_id: int):
-        """View detailed information about a specific point entry."""
+        """
+        Display detailed information about a specific point entry.
+
+        Shows all information including timestamp, brother, points, pledge,
+        comment, and approval status with approver and timestamp.
+
+        Args:
+            interaction: Discord interaction from the slash command
+            point_id: Database ID of the point entry to view
+        """
+        from role.role_checking import check_brother_role
+        if not await check_brother_role(interaction):
+            await interaction.response.send_message("You don't have permission to do that. Brother role required.", ephemeral=True)
+            return
         try:
             await interaction.response.send_message("Fetching point details...")
 
-            db_connection = sqlite3.connect(master_point_file_name)
-            cursor = db_connection.cursor()
-            cursor.execute("""
-                SELECT id, Time, PointChange, Pledge, Brother, Comment,
-                       approval_status, approved_by, approval_timestamp
-                FROM Points
-                WHERE id = ?
-            """, (point_id,))
-            row = cursor.fetchone()
-            db_connection.close()
+            # Get point entry using database manager
+            entry = db_manager.get_point_by_id(point_id)
 
-            if not row:
+            if not entry:
                 await interaction.followup.send(f"No point entry found with ID {point_id}.")
                 return
 
-            (point_id, time_str, point_change, pledge, brother, comment,
-             approval_status, approved_by, approval_timestamp) = row
-
-            # Format time
-            try:
-                time_dt = datetime.fromisoformat(time_str)
-                time_formatted = time_dt.strftime('%Y-%m-%d %H:%M:%S')
-            except:
-                time_formatted = time_str
-
-            # Format approval info
-            approval_info = ""
-            if approval_status == 'approved':
-                approval_info = f"✅ **Approved** by {approved_by}"
-                if approval_timestamp:
-                    try:
-                        approval_dt = datetime.fromisoformat(approval_timestamp)
-                        approval_info += f" on {approval_dt.strftime('%Y-%m-%d %H:%M:%S')}"
-                    except:
-                        approval_info += f" on {approval_timestamp}"
-            elif approval_status == 'rejected':
-                approval_info = f"❌ **Rejected** by {approved_by}"
-                if approval_timestamp:
-                    try:
-                        approval_dt = datetime.fromisoformat(approval_timestamp)
-                        approval_info += f" on {approval_dt.strftime('%Y-%m-%d %H:%M:%S')}"
-                    except:
-                        approval_info += f" on {approval_timestamp}"
-            else:
-                approval_info = "⏳ **Pending Approval**"
-
-            # Create detailed response
-            details_text = f"📊 **Point Entry Details - ID {point_id}**\n\n"
-            details_text += f"⏰ **Time**: {time_formatted}\n"
-            details_text += f"👤 **Brother**: {brother}\n"
-            details_text += f"📈 **Point Change**: {point_change:+d}\n"
-            details_text += f"🎯 **Pledge**: {pledge}\n"
-            details_text += f"💬 **Comment**: {comment}\n"
-            details_text += f"🔍 **Status**: {approval_info}\n"
+            # Format detailed entry using utility function
+            details_text = f"📊 **Point Entry Details - ID {entry.entry_id}**\n\n"
+            details_text += format_point_entry_detailed(entry)
 
             await interaction.followup.send(details_text)
 

@@ -1,6 +1,5 @@
 # Imports
 import asyncio  # Asynchronous I/O support
-import os  # File and path operations
 import ssl  # Secure connection support
 from datetime import datetime  # Date and time handling
 
@@ -8,10 +7,10 @@ import aiohttp  # Add this import at the top with other imports
 import discord
 import pytz  # type: ignore  # Timezone support
 from discord.ext import commands  # Discord bot commands and scheduled tasks
-from dotenv import load_dotenv
 
 from commands.admin import setup as setup_admin
 from commands.points import setup as setup_points
+from config.settings import get_config
 
 # Warner: ssl_context until the on_ready function was AI generated because I couldn't be bothered
 # Initialize SSL context for secure connections
@@ -56,6 +55,19 @@ async def on_ready():
         # Synchronize slash commands with Discord's API
         synced = await bot.tree.sync()
         print(f'Synced {len(synced)} command(s)')
+        
+        # Test the deleted messages channel access
+        config = get_config()
+        test_channel = bot.get_channel(config.deleted_messages_channel_id)
+        if test_channel:
+            print(f"✅ Successfully found target channel: {test_channel.name} in {test_channel.guild.name}")
+        else:
+            print(f"❌ Could not find target channel with ID {config.deleted_messages_channel_id}")
+            print("Available channels:")
+            for guild in bot.guilds:
+                print(f"  Guild: {guild.name} (ID: {guild.id})")
+                for channel in guild.text_channels:
+                    print(f"    - {channel.name} (ID: {channel.id})")
     except Exception as e:
         print(f'Error synchronizing slash commands: {str(e)}')
 
@@ -68,13 +80,13 @@ async def on_message_delete(message):
     print(f"Message deletion detected! Message ID: {message.id}, Author: {message.author}")
     
     try:
-        # Channel ID where deleted messages will be sent
-        deleted_messages_channel_id = 1160689874299523133
-        
-        # Get the target channel
-        channel = bot.get_channel(deleted_messages_channel_id)
+        # Get configuration
+        config = get_config()
+
+        # Get the target channel from config
+        channel = bot.get_channel(config.deleted_messages_channel_id)
         if not channel:
-            print(f"Warning: Could not find channel with ID {deleted_messages_channel_id}")
+            print(f"Warning: Could not find channel with ID {config.deleted_messages_channel_id}")
             return
         
         print(f"Target channel found: {channel.name} ({channel.id})")
@@ -143,10 +155,51 @@ async def on_message_delete(message):
     except Exception as e:
         print(f"Error handling message deletion: {str(e)}")
 
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-if not TOKEN:
-    raise ValueError("DISCORD_TOKEN not found in .env file")
+@bot.tree.command(name="test_deleted_channel", description="Test if the bot can access the deleted messages channel")
+async def test_deleted_channel(interaction: discord.Interaction):
+    """Test command to verify the bot can access the deleted messages channel."""
+    try:
+        config = get_config()
+        channel = bot.get_channel(config.deleted_messages_channel_id)
+        
+        if not channel:
+            await interaction.response.send_message(f"❌ Could not find channel with ID {config.deleted_messages_channel_id}\n\n**Available channels:**", ephemeral=True)
+            
+            # List available channels
+            channel_list = []
+            for guild in bot.guilds:
+                for ch in guild.text_channels:
+                    channel_list.append(f"**{guild.name}**: {ch.name} (ID: {ch.id})")
+            
+            if channel_list:
+                # Split into chunks if too long
+                chunk_size = 10
+                for i in range(0, len(channel_list), chunk_size):
+                    chunk = channel_list[i:i+chunk_size]
+                    await interaction.followup.send("\n".join(chunk), ephemeral=True)
+            else:
+                await interaction.followup.send("No text channels found.", ephemeral=True)
+            return
+        
+        # Test sending a message to the channel
+        test_embed = discord.Embed(
+            title="🧪 Test Message",
+            description="This is a test to verify the bot can send messages to this channel.",
+            color=discord.Color.green(),
+            timestamp=datetime.now(pytz.UTC)
+        )
+        test_embed.add_field(name="Channel", value=f"{channel.name} ({channel.id})", inline=True)
+        test_embed.add_field(name="Guild", value=f"{channel.guild.name} ({channel.guild.id})", inline=True)
+        
+        await channel.send(embed=test_embed)
+        await interaction.response.send_message(f"✅ Successfully sent test message to {channel.mention} in {channel.guild.name}", ephemeral=True)
+        
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error testing channel access: {str(e)}", ephemeral=True)
+
+# Load configuration from centralized config module
+config = get_config()
+TOKEN = config.discord_token
 
 
 
