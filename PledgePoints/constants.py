@@ -70,8 +70,8 @@ SQL_INT_MIN = -9223372036854775808
 SQL_INT_MAX = 9223372036854775807
 
 # Point entry validation regex
-# Matches format: +10, -5, +100, etc.
-POINT_REGEX_PATTERN = r"^([+-]\d+)"
+# Matches format: +10, -5, +100, +1.25, -2.5, etc.
+POINT_REGEX_PATTERN = r"^([+-]\d+(?:\.\d+)?)"
 
 # =============================================================================
 # RANKING DISPLAY
