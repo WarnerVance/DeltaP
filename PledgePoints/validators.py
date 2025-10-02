@@ -111,9 +111,9 @@ def parse_point_message(content: str) -> Optional[Tuple[int, str, str]]:
     if not point_match:
         return None
 
-    # Parse point value
+    # Parse point value (accept floats and round to nearest int)
     try:
-        point_change = int(point_match.group(1))
+        point_change = round(float(point_match.group(1)))
     except ValueError:
         return None
 
