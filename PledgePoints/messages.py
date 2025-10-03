@@ -105,7 +105,7 @@ async def process_messages(
             time=timestamp,
             point_change=point_change,
             pledge=pledge,
-            brother=author.name,
+            brother=author.display_name,
             comment=comment
         )
         processed_entries.append(entry)
