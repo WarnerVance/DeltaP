@@ -1,10 +1,63 @@
-/.env
-/example.csv
-/test.csv
-/large_dataset.csv
-.idea
-__pycache__
-MasterPoints.csv
-.DS_Store
-.vscode
+# Environment & Secrets
+.env
+*.pem
+*.key
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 pledge_points.db
+
+# CSV Data files
+*.csv
+MasterPoints.csv
+example.csv
+test.csv
+large_dataset.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing & Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# uv
+.uv/
+
+# Logs
+*.log
+logs/
