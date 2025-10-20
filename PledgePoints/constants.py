@@ -22,7 +22,6 @@ VALID_PLEDGES: List[str] = [
     "Felix",
     "George",
     "Henrik",
-    "James",
     "Kashyap",
     "Krishiv",
     "Logan",

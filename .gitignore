@@ -15,7 +15,8 @@ MasterPoints.csv
 example.csv
 test.csv
 large_dataset.csv
-
+CLAUDE.md
+.claude
 # Python
 __pycache__/
 *.py[cod]
