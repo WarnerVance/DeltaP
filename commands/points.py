@@ -4,6 +4,7 @@ import time
 import discord
 from discord.ext import commands
 
+from PledgePoints.constants import VALID_PLEDGES
 from PledgePoints.messages import fetch_messages_from_days_ago, process_messages, eliminate_duplicates
 from PledgePoints.pledges import get_pledge_points, rank_pledges, plot_rankings
 from PledgePoints.sqlutils import DatabaseManager
@@ -108,6 +109,10 @@ def setup(bot: commands.Bot):
             # Get pledge points and rankings using database manager
             points = get_pledge_points(db_manager)
             rankings_df = rank_pledges(points)
+
+            # Filter to only include current pledges from VALID_PLEDGES
+            rankings_df = rankings_df[rankings_df.index.isin(VALID_PLEDGES)]
+
             rankings = [(pledge, int(total_points)) for pledge, total_points in rankings_df.items()]
 
             if not rankings:
@@ -144,6 +149,9 @@ def setup(bot: commands.Bot):
             # Get pledge points and rankings using database manager
             points = get_pledge_points(db_manager)
             rankings_df = rank_pledges(points)
+
+            # Filter to only include current pledges from VALID_PLEDGES
+            rankings_df = rankings_df[rankings_df.index.isin(VALID_PLEDGES)]
 
             if rankings_df.empty:
                 await interaction.followup.send("No pledge data found in the database.")
