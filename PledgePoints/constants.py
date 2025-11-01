@@ -17,7 +17,6 @@ from typing import Dict, List
 # Valid pledge names for the current semester
 # Update this list at the start of each semester
 VALID_PLEDGES: List[str] = [
-    "Eli",
     "Evan",
     "Felix",
     "George",
