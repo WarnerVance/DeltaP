@@ -44,10 +44,7 @@ async def fetch_messages_from_days_ago(
     return messages
 
 
-
-
-async def add_reactions_with_rate_limit(
-    messages: List[Tuple[discord.Message, bool]],
+async def add_reactions_with_rate_limit(messages: List[Tuple[discord.Message, bool]],
     rate_limit: float = REACTION_RATE_LIMIT_SECONDS
 ):
     """

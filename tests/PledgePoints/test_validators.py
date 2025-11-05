@@ -1,13 +1,12 @@
 """Unit tests for PledgePoints validators."""
-import pytest
 
+from PledgePoints.constants import SQL_INT_MAX, SQL_INT_MIN
 from PledgePoints.validators import (
     normalize_pledge_name,
     parse_point_message,
     validate_pledge_name,
     validate_point_change,
 )
-from PledgePoints.constants import SQL_INT_MAX, SQL_INT_MIN
 
 
 class TestValidatePointChange:
@@ -64,10 +63,10 @@ class TestValidatePledgeName:
     def test_valid_pledge_name(self):
         """Test validation of valid pledge names."""
         # This test depends on VALID_PLEDGES constant
-        # Assuming "Eli" is a valid pledge
-        result = validate_pledge_name("eli")
+        # Assuming "Logan" is a valid pledge
+        result = validate_pledge_name("logan")
         assert result is not None
-        assert result == "Eli"
+        assert result == "Logan"
 
     def test_invalid_pledge_name(self):
         """Test validation of invalid pledge names."""
