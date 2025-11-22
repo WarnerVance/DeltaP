@@ -24,7 +24,6 @@ VALID_PLEDGES: List[str] = [
     "Kashyap",
     "Krishiv",
     "Logan",
-    "Matthew",
     "Milo",
     "Nick",
     "Tony",
@@ -35,9 +34,6 @@ VALID_PLEDGES: List[str] = [
 # Pledge name aliases and nicknames
 # Maps common nicknames or alternate spellings to official pledge names
 PLEDGE_ALIASES: Dict[str, str] = {
-    "Matt": "Matthew",
-    "Ozempic": "Eli",
-    "Pledge": "Blake",
     # Add more aliases as needed
 }
 
