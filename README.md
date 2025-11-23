@@ -8,20 +8,20 @@ A Discord bot for managing and tracking pledge points in a fraternity/organizati
 
 ## Features
 
-### 📊 Point Management
+### Point Management
 - **Point Submissions**: Brothers can submit points for pledges with comments
 - **Smart Parsing**: Accepts various formats like `+10 Eli Great job` or `+10 to Eli for great work`
 - **Float Support**: Automatically rounds float values to integers (e.g., `+10.7` → `11`)
 - **Nickname Aliases**: Recognizes common nicknames and maps them to official names
 - **Validation**: Ensures only valid pledge names and point values are accepted
 
-### 🎯 Point Tracking
+### Point Tracking
 - **Approval System**: Point submissions require admin approval before counting
 - **Rankings**: View real-time leaderboards with medal emojis for top 3
 - **History**: Track all point entries with timestamps and comments
 - **Filtering**: View pending, approved, or rejected points
 
-### 🛡️ Administrative Features
+### Administrative Features
 - **Approve/Reject**: Admins can review and approve or reject point submissions
 - **Delete Messages Logging**: Tracks deleted messages in a dedicated channel
 - **Role-based Permissions**: Certain commands restricted to Info Systems role
@@ -31,9 +31,21 @@ A Discord bot for managing and tracking pledge points in a fraternity/organizati
 ## Installation
 
 ### Prerequisites
-- Python 3.13 or higher
-- Discord Bot Token ([Create one here](https://discord.com/developers/applications))
-- [uv](https://github.com/astral-sh/uv) package manager
+
+1. Install UV (Python Package Manager)
+
+On Mac and Linux:
+
+```bash
+
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+UV will install the needed Python version and dependencies when needed.
+
+2. Install Git
+
+Use whatever package manager you prefer for your OS.
 
 ### Setup
 
@@ -63,22 +75,15 @@ A Discord bot for managing and tracking pledge points in a fraternity/organizati
    CHANNEL_ID=your_points_submission_channel_id
    ```
 
-4. **Configure Discord Bot Intents**
+Get details from Warner.
 
-   In the [Discord Developer Portal](https://discord.com/developers/applications):
-   - Navigate to your bot application
-   - Go to the "Bot" section
-   - Enable the following Privileged Gateway Intents:
-     - Message Content Intent
-     - Server Members Intent (optional, for role checking)
-
-5. **Update pledge configuration**
+4. **Update pledge configuration**
 
    Edit `PledgePoints/constants.py` to add current semester pledges:
    ```python
    VALID_PLEDGES: List[str] = [
-       "Eli",
-       "Evan",
+       "Joe",
+       "Yo",
        # ... add your pledges
    ]
 
@@ -88,42 +93,12 @@ A Discord bot for managing and tracking pledge points in a fraternity/organizati
    }
    ```
 
-6. **Run the bot**
+5**Run the bot**
    ```bash
    uv run python main.py
    ```
 
-## Usage
-
-### Point Submission Commands
-
-Submit points in the configured points channel:
-
-```
-+10 Eli Great job at recruitment
--5 Matthew Being late to chapter
-+15 to Logan for excellent presentation
-```
-
-**Format**: `[+/-]<points> [to] <pledge_name> [for] <comment>`
-
-### Slash Commands
-
-#### General Commands
-- `/ping` - Check bot responsiveness and latency
-- `/test_deleted_channel` - Test deleted messages channel access
-
-#### Point Commands
-- `/points_view <entry_id>` - View details of a specific point entry
-- `/points_history <pledge_name>` - View point history for a pledge
-- `/points_rankings` - Display pledge rankings leaderboard
-- `/points_pending` - View all pending point submissions (admin only)
-- `/points_approve <entry_ids>` - Approve point submissions (admin only)
-- `/points_reject <entry_ids>` - Reject point submissions (admin only)
-
-#### Admin Commands
-- `/shutdown` - Remotely shut down the bot (requires Info Systems role)
-
+The sqlite database will be created in the project root automatically.
 ## Development
 
 ### Project Structure
@@ -171,30 +146,6 @@ uv run pytest tests/PledgePoints/test_validators.py
 # Run with verbose output
 uv run pytest -v
 ```
-
-### Code Coverage
-
-Current coverage: **31%** (45 tests passing)
-
-- PledgePoints validators: **93%**
-- Config settings: **100%**
-- Discord helpers: **98%**
-- Admin commands: **64%**
-
-Generate HTML coverage report:
-```bash
-uv run pytest --cov --cov-report=html
-open htmlcov/index.html
-```
-
-### CI/CD
-
-GitHub Actions automatically runs tests on:
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
-- Manual workflow dispatch
-
-View workflow: `.github/workflows/tests.yml`
 
 ## Database Schema
 
