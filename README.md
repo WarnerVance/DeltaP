@@ -176,13 +176,6 @@ Update `PledgePoints/constants.py` each semester:
 - `RANK_MEDALS` - Emoji medals for rankings
 - `POINT_REGEX_PATTERN` - Point parsing regex
 
-### Discord Configuration
-
-Set in `.env` file:
-
-- `DISCORD_TOKEN` - Bot authentication token
-- `CHANNEL_ID` - Channel for point submissions
-- `CSV_NAME` - SQLite database filename
 
 ### Role Permissions
 
@@ -191,16 +184,6 @@ Configure in `role/role_checking.py`:
 - Info Systems role ID for admin commands
 - Custom role checks as needed
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes and add tests
-4. Run the test suite (`uv run pytest`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
 ### Code Style
 
 - Follow PEP 8 guidelines
@@ -208,44 +191,5 @@ Configure in `role/role_checking.py`:
 - Write tests for new features
 - Maintain or improve code coverage
 
-## Troubleshooting
-
-### Bot won't start
-- Verify `DISCORD_TOKEN` is correct in `.env`
-- Check that all required intents are enabled in Discord Developer Portal
-- Ensure Python 3.13+ is installed
-
-### Point submissions not working
-- Verify bot has permission to read messages in the points channel
-- Check that pledge names in submission match `VALID_PLEDGES` (case-insensitive)
-- Ensure message format is correct: `[+/-]<points> <pledge> <comment>`
-
-### Commands not appearing
-- Run `/sync` to force command synchronization
-- Check bot has `applications.commands` scope
-- Verify bot is in the server with proper permissions
-
-### Database errors
-- Ensure `CSV_NAME` path is writable
-- Check SQLite database isn't locked by another process
-- Verify schema is up to date
-
-## License
-
-This project is private and intended for internal use.
-
-## Authors
-
-- **Warner Vance** - Primary developer
-- AI assistance for specific components
-
-## Acknowledgments
-
-- Built with [discord.py](https://github.com/Rapptz/discord.py)
-- Database powered by SQLite
-- Testing with pytest and pytest-asyncio
-- Dependency management with [uv](https://github.com/astral-sh/uv)
-
----
 
 **Note**: Remember to update `VALID_PLEDGES` in `PledgePoints/constants.py` at the start of each semester!
